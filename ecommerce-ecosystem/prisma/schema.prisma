@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  telegramId BigInt?  @unique @map("telegram_id")
+  phone      String?
+  name       String?
+  lang       String   @default("uz") // "uz" or "ru"
+  role       Role     @default(CUSTOMER)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  orders     Order[]  @relation("CustomerOrders")
+  deliveries Order[]  @relation("CourierDeliveries")
+
+  @@map("users")
+}
+
+enum Role {
+  CUSTOMER
+  COURIER
+  ADMIN
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      // in UZS
+  oldPrice    Int?     @map("old_price")
+  imageUrl    String?  @map("image_url")
+  videoUrl    String?  @map("video_url")
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation("CustomerOrders", fields: [userId], references: [id])
+  status          OrderStatus @default(NEW)
+  paymentMethod   PaymentMethod @map("payment_method")
+  totalAmount     Int      @map("total_amount")
+  deliveryPrice   Int      @map("delivery_price")
+  addressLat      Float?   @map("address_lat")
+  addressLng      Float?   @map("address_lng")
+  addressText     String?  @map("address_text")
+  
+  courierId       String?  @map("courier_id")
+  courier         User?    @relation("CourierDeliveries", fields: [courierId], references: [id])
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  NEW
+  PAID
+  COURIER
+  DELIVERED
+  CANCELED
+}
+
+enum PaymentMethod {
+  CASH
+  CLICK
+  PAYME
+  UZUMPAY
+  PAYNET
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Int      // price at the time of order
+
+  @@map("order_items")
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  telegramId BigInt   @map("telegram_id")
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([telegramId, productId])
+  @@map("cart_items")
+}

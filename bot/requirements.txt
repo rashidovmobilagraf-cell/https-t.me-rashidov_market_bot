@@ -1,0 +1,5 @@
+python-telegram-bot[webhooks]>=20.0
+python-dotenv
+nest_asyncio
+aiohttp
+aiohttp-cors

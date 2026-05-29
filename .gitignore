@@ -1,0 +1,11 @@
+node_modules/
+.env
+__pycache__/
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.js
+!eslint.config.js
+dist/
+.DS_Store

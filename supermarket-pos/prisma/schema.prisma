@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Product {
+  id          String     @id @default(cuid())
+  barcode     String     @unique
+  name        String
+  costPrice   Float      @default(0)
+  sellPrice   Float      @default(0)
+  stock       Int        @default(0)
+  expiryDate  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  isDeleted   Boolean    @default(false)
+  saleItems   SaleItem[]
+}
+
+model Customer {
+  id          String     @id @default(cuid())
+  name        String
+  phone       String?
+  balance     Float      @default(0) // Positive means they owe us (Debt)
+  createdAt   DateTime   @default(now())
+  sales       Sale[]
+  payments    Transaction[] // For tracking debt repayments
+}
+
+model Transaction {
+  id          String     @id @default(cuid())
+  type        String     // INCOME, EXPENSE, DEBT_REPAYMENT, INVESTMENT, PERSONAL
+  amount      Float
+  description String?
+  createdAt   DateTime   @default(now())
+  
+  customerId  String?
+  customer    Customer?  @relation(fields: [customerId], references: [id])
+}
+
+model Sale {
+  id            String     @id @default(cuid())
+  totalAmount   Float      @default(0)
+  totalCost     Float      @default(0) // To calculate actual profit
+  paymentMethod String     @default("CASH") // CASH, CARD, P2P, DEBT, PERSONAL
+  createdAt     DateTime   @default(now())
+  
+  customerId    String?
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+
+  items         SaleItem[]
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+  saleId    String
+  productId String
+  quantity  Int      @default(1)
+  price     Float    @default(0) // Sell price at the time of sale
+  cost      Float    @default(0) // Cost price at the time of sale
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
