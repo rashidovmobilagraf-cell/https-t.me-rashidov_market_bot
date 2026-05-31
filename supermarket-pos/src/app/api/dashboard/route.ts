@@ -29,10 +29,10 @@ export async function GET() {
     const todayCostTotal = todaySalesData._sum.totalCost || 0;
     const todayGrossProfit = todaySalesTotal - todayCostTotal;
 
-    // 1.1 Today's expenses
-    const todayExpensesData = await prisma.transaction.aggregate({
+    // 1.1 Today's transactions
+    const todayTx = await prisma.transaction.groupBy({
+      by: ['type'],
       where: {
-        type: 'EXPENSE',
         createdAt: {
           gte: start,
           lte: end,
@@ -42,9 +42,30 @@ export async function GET() {
         amount: true,
       },
     });
-    const todayExpenses = todayExpensesData._sum.amount || 0;
+
+    let todayExpenses = 0;
+    let todayIncome = 0;
+    let todayPersonal = 0;
+
+    todayTx.forEach(tx => {
+      if (tx.type === 'EXPENSE') todayExpenses = tx._sum.amount || 0;
+      if (tx.type === 'INCOME' || tx.type === 'INVESTMENT' || tx.type === 'DEBT_REPAYMENT') todayIncome += tx._sum.amount || 0;
+      if (tx.type === 'PERSONAL') todayPersonal = tx._sum.amount || 0;
+    });
 
     const netProfit = todayGrossProfit - todayExpenses;
+
+    // 1.2 Cash in Register (Today)
+    // All Cash Sales today
+    const cashSalesData = await prisma.sale.aggregate({
+      where: {
+        createdAt: { gte: start, lte: end },
+      },
+      _sum: { cashAmount: true }
+    });
+    const cashSales = cashSalesData._sum.cashAmount || 0;
+
+    const cashInRegister = cashSales + todayIncome - todayExpenses - todayPersonal;
 
     // 1.2 Total Debt from Customers
     const totalDebtData = await prisma.customer.aggregate({
@@ -56,7 +77,7 @@ export async function GET() {
 
     // 2. Low stock products (e.g. less than 10)
     const lowStock = await prisma.product.findMany({
-      where: { stock: { lt: 10 } },
+      where: { stock: { lt: 10 }, isDeleted: false },
       take: 10,
     });
 
@@ -66,6 +87,7 @@ export async function GET() {
     
     const expiringSoon = await prisma.product.findMany({
       where: {
+        isDeleted: false,
         expiryDate: {
           lte: thirtyDaysFromNow,
           gte: today, // ignore already expired maybe? Let's show all that are < 30 days
@@ -105,6 +127,7 @@ export async function GET() {
 
     const deadStock = await prisma.product.findMany({
       where: {
+        isDeleted: false,
         id: { notIn: soldProductIds },
         stock: { gt: 0 }
       },
@@ -116,6 +139,7 @@ export async function GET() {
       todayGrossProfit,
       todayExpenses,
       netProfit,
+      cashInRegister,
       totalDebt,
       lowStock,
       expiringSoon,

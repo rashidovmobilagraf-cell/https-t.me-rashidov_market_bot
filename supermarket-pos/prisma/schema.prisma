@@ -10,28 +10,54 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  pin       String   @unique
+  role      String   @default("CASHIER") // ADMIN, CASHIER
+  createdAt DateTime @default(now())
+  sales     Sale[]
+}
+
 model Product {
-  id          String     @id @default(cuid())
-  barcode     String     @unique
-  name        String
-  costPrice   Float      @default(0)
-  sellPrice   Float      @default(0)
-  stock       Int        @default(0)
-  expiryDate  DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  isDeleted   Boolean    @default(false)
-  saleItems   SaleItem[]
+  id               String          @id @default(cuid())
+  barcode          String          @unique
+  name             String
+  costPrice        Float           @default(0)
+  sellPrice        Float           @default(0)
+  stock            Float           @default(0)
+  minStock         Float           @default(0)
+  crossSellMessage String?
+  expiryDate       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  isDeleted        Boolean         @default(false)
+  saleItems        SaleItem[]
+  supplierOrders   SupplierOrder[]
+}
+
+model SupplierOrder {
+  id          String   @id @default(cuid())
+  productId   String
+  quantity    Float    @default(0)
+  status      String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  createdAt   DateTime @default(now())
+  product     Product  @relation(fields: [productId], references: [id])
 }
 
 model Customer {
-  id          String     @id @default(cuid())
-  name        String
-  phone       String?
-  balance     Float      @default(0) // Positive means they owe us (Debt)
-  createdAt   DateTime   @default(now())
-  sales       Sale[]
-  payments    Transaction[] // For tracking debt repayments
+  id              String         @id @default(cuid())
+  name            String
+  phone           String?
+  address         String?
+  birthday        DateTime?
+  telegramId      String?
+  telegramChatId  String?
+  balance         Float          @default(0) // Positive means they owe us (Debt)
+  cashbackBalance Float          @default(0)
+  createdAt       DateTime       @default(now())
+  sales           Sale[]
+  payments        Transaction[]  // For tracking debt repayments
 }
 
 model Transaction {
@@ -46,23 +72,38 @@ model Transaction {
 }
 
 model Sale {
-  id            String     @id @default(cuid())
-  totalAmount   Float      @default(0)
-  totalCost     Float      @default(0) // To calculate actual profit
-  paymentMethod String     @default("CASH") // CASH, CARD, P2P, DEBT, PERSONAL
-  createdAt     DateTime   @default(now())
+  id             String     @id @default(cuid())
+  totalAmount    Float      @default(0)
+  totalCost      Float      @default(0) // To calculate actual profit
+  paymentMethod  String     @default("CASH") // CASH, CARD, P2P, DEBT, PERSONAL, MIXED
   
-  customerId    String?
-  customer      Customer?  @relation(fields: [customerId], references: [id])
+  // Mixed payment amounts
+  cashAmount     Float      @default(0)
+  cardAmount     Float      @default(0)
+  p2pAmount      Float      @default(0)
+  debtAmount     Float      @default(0)
+  
+  // Advanced Features
+  cashbackEarned Float      @default(0)
+  cashbackUsed   Float      @default(0)
+  discount       Float      @default(0)
+  
+  createdAt      DateTime   @default(now())
+  
+  customerId     String?
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  
+  cashierId      String?
+  cashier        User?      @relation(fields: [cashierId], references: [id])
 
-  items         SaleItem[]
+  items          SaleItem[]
 }
 
 model SaleItem {
   id        String   @id @default(cuid())
   saleId    String
   productId String
-  quantity  Int      @default(1)
+  quantity  Float    @default(1)
   price     Float    @default(0) // Sell price at the time of sale
   cost      Float    @default(0) // Cost price at the time of sale
   sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)

@@ -13,6 +13,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         costPrice: Number(data.costPrice),
         sellPrice: Number(data.sellPrice),
         stock: Number(data.stock),
+        minStock: Number(data.minStock || 0),
+        crossSellMessage: data.crossSellMessage || null,
         expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
       },
     });

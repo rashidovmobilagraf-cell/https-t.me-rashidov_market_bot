@@ -68,7 +68,8 @@ body { background: var(--bg-main); color: var(--text-main); }
 
 /* Fixed Bottom Bar */
 .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; padding: 16px; background: #fff; border-top: 1px solid var(--border); z-index: 210; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-.btn-primary { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+.btn-primary { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn-primary:active { transform: translateY(2px); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2); }
 .m-controls-row { display: flex; gap: 12px; align-items: center; }
 .qty-stepper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 12px; width: 110px; justify-content: space-between; padding: 4px; height: 48px; }
 .qty-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; font-size: 20px; color: #333; cursor: pointer; }
@@ -86,14 +87,15 @@ body { background: var(--bg-main); color: var(--text-main); }
 .c-actions { display: flex; justify-content: space-between; align-items: center; }
 
 /* Checkout Page */
-.checkout-section { background: #fff; padding: 16px; margin-bottom: 8px; }
-.checkout-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-.segmented-control { display: flex; background: #f0f0f0; border-radius: 8px; padding: 4px; margin-bottom: 16px; }
-.seg-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-.seg-btn.active { background: #fff; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.input-field { width: 100%; border: 1px solid var(--border); padding: 14px; border-radius: 8px; font-size: 15px; margin-bottom: 12px; outline: none; background: #f9f9f9; user-select: auto; -webkit-user-select: auto; }
-.summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: #333; }
-.summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.checkout-section { background: linear-gradient(to bottom right, #ffffff, #f0fdf4); padding: 20px; margin: 12px; border-radius: 16px; box-shadow: 0 4px 12px rgba(13, 148, 114, 0.08); border: 1px solid rgba(13, 148, 114, 0.1); }
+.checkout-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+.segmented-control { display: flex; background: #e2e8f0; border-radius: 12px; padding: 6px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+.seg-btn { flex: 1; padding: 12px; border: none; background: transparent; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.seg-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: scale(1.02); }
+.input-field { width: 100%; border: 2px solid transparent; padding: 16px; border-radius: 12px; font-size: 15px; margin-bottom: 16px; outline: none; background: #f8fafc; color: #334155; transition: all 0.3s ease; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02); }
+.input-field:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(13, 148, 114, 0.1); }
+.summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: #475569; font-weight: 500; }
+.summary-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-top: 16px; padding-top: 16px; border-top: 2px dashed #cbd5e1; color: #0f172a; }
 
 /* Profile Page */
 .profile-menu { background: #fff; margin-top: 8px; }

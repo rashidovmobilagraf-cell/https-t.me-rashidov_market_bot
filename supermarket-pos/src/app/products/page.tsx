@@ -19,6 +19,8 @@ export default function ProductsPage() {
     costPrice: '',
     sellPrice: '',
     stock: '',
+    minStock: '',
+    crossSellMessage: '',
     expiryDate: '',
   });
 
@@ -83,6 +85,8 @@ export default function ProductsPage() {
       costPrice: product.costPrice.toString(),
       sellPrice: product.sellPrice.toString(),
       stock: product.stock.toString(),
+      minStock: product.minStock?.toString() || '',
+      crossSellMessage: product.crossSellMessage || '',
       expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
     });
     setIsModalOpen(true);
@@ -90,7 +94,7 @@ export default function ProductsPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ barcode: '', name: '', costPrice: '', sellPrice: '', stock: '', expiryDate: '' });
+    setFormData({ barcode: '', name: '', costPrice: '', sellPrice: '', stock: '', minStock: '', crossSellMessage: '', expiryDate: '' });
   };
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.barcode.includes(search));
@@ -143,10 +147,11 @@ export default function ProductsPage() {
                   <td className="px-6 py-4">
                     <span className="text-slate-400">{product.costPrice}</span> / <span className="font-bold text-green-600">{product.sellPrice}</span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.stock < 10 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                  <td className="px-6 py-4 flex flex-col gap-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold w-fit ${product.stock <= (product.minStock || 0) ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
                       {product.stock} ta
                     </span>
+                    {product.minStock > 0 && <span className="text-[10px] text-slate-400">Min: {product.minStock}</span>}
                   </td>
                   <td className="px-6 py-4">
                     {product.expiryDate ? format(new Date(product.expiryDate), 'dd.MM.yyyy') : '-'}
@@ -193,11 +198,21 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
-                  <input required type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                  <input required type="number" step="0.001" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Minimal Qoldiq</label>
+                  <input type="number" step="0.001" value={formData.minStock} onChange={e => setFormData({...formData, minStock: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Srogi (ixtiyoriy)</label>
                   <input type="date" value={formData.expiryDate} onChange={e => setFormData({...formData, expiryDate: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">Cross-Selling <span className="text-[10px] text-slate-400 bg-slate-100 px-1 rounded">Misol: Snickers taklif qiling!</span></label>
+                  <input type="text" value={formData.crossSellMessage} onChange={e => setFormData({...formData, crossSellMessage: e.target.value})} className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Kassirga eslatma..." />
                 </div>
               </div>
               <div className="flex gap-3 pt-4">

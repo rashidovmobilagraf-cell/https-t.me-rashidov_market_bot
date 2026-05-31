@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import LayoutWrapper from "@/components/LayoutWrapper";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SuperMarketPOS",
+  title: "RASHIDOV_MARKET.no1_POST",
   description: "POS and Inventory Management System",
 };
 
@@ -18,11 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.className} h-full antialiased`}>
-      <body className="min-h-full flex bg-slate-50 text-slate-900">
-        <Sidebar />
-        <main className="flex-1 ml-64 p-8 overflow-y-auto min-h-screen">
+      <body className="min-h-full bg-slate-50 text-slate-900">
+        <LayoutWrapper>
           {children}
-        </main>
+        </LayoutWrapper>
         <Toaster position="top-right" />
       </body>
     </html>

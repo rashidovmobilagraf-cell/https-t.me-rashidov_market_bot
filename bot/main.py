@@ -310,42 +310,13 @@ async def admin_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-# --- aiohttp Web API (Admin Panel Proxy to Supabase) ---
-async def api_get_products(request):
-    res = await supabase_request("GET", "products?select=*")
-    return web.json_response(res)
-
-async def api_add_product(request):
-    try:
-        data = await request.json()
-        import time
-        new_product = {
-            "id": data.get("id") or str(int(time.time())),
-            "name": data.get("name", "Yangi mahsulot"),
-            "price": str(data.get("price", "0")),
-            "category": data.get("category", "Boshqa"),
-            "image": data.get("image", "https://picsum.photos/300")
-        }
-        res = await supabase_request("POST", "products", json_data=new_product)
-        return web.json_response({"success": True, "product": new_product})
-    except Exception as e:
-        return web.json_response({"success": False, "error": str(e)}, status=500)
-
-async def api_delete_product(request):
-    try:
-        p_id = request.match_info.get("id")
-        await supabase_request("DELETE", f"products?id=eq.{p_id}")
-        return web.json_response({"success": True})
-    except Exception as e:
-        return web.json_response({"success": False, "error": str(e)}, status=500)
-
 async def start_bot(app):
     await app.initialize()
     await app.start()
     await app.updater.start_polling(drop_pending_updates=True)
 
 async def main():
-    logging.info("Rashidov Market Boti ishga tushdi (Bot + API Supabase orqali)...")
+    logging.info("Rashidov Market Boti ishga tushdi (Faqat Telegram Bot)...")
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin_cmd))
@@ -358,29 +329,6 @@ async def main():
     app.add_handler(CallbackQueryHandler(edit_callback, pattern=r"^(edit_name|edit_phone)$"))
     app.add_handler(CallbackQueryHandler(order_action_callback, pattern=r"^(cancel|pay)_"))
     app.add_handler(CallbackQueryHandler(buy_callback, pattern=r"^buy_"))
-    
-    web_app = web.Application()
-    
-    cors = aiohttp_cors.setup(web_app, defaults={
-        "*": aiohttp_cors.ResourceOptions(
-            allow_credentials=True,
-            expose_headers="*",
-            allow_headers="*",
-        )
-    })
-    
-    products_res = cors.add(web_app.router.add_resource("/api/products"))
-    cors.add(products_res.add_route("GET", api_get_products))
-    cors.add(products_res.add_route("POST", api_add_product))
-    
-    product_res = cors.add(web_app.router.add_resource("/api/products/{id}"))
-    cors.add(product_res.add_route("DELETE", api_delete_product))
-    
-    runner = web.AppRunner(web_app)
-    await runner.setup()
-    site = web.TCPSite(runner, '127.0.0.1', 8000)
-    await site.start()
-    logging.info("AIOHTTP Server running on 127.0.0.1:8000")
     
     await start_bot(app)
     

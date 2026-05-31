@@ -36,16 +36,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Bu shtrix-kod ro'yxatda bor" }, { status: 400 });
     }
 
-    const product = await prisma.product.create({
-      data: {
-        barcode: data.barcode,
-        name: data.name,
-        costPrice: Number(data.costPrice),
-        sellPrice: Number(data.sellPrice),
-        stock: Number(data.stock),
-        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
-      },
-    });
+      const product = await prisma.product.create({
+        data: {
+          barcode: data.barcode,
+          name: data.name,
+          costPrice: Number(data.costPrice),
+          sellPrice: Number(data.sellPrice),
+          stock: Number(data.stock),
+          minStock: Number(data.minStock || 0),
+          crossSellMessage: data.crossSellMessage || null,
+          expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        },
+      });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error(error);

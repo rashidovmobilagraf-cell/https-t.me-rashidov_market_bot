@@ -20,6 +20,9 @@ export async function POST(request: Request) {
       data: {
         name: data.name,
         phone: data.phone,
+        address: data.address || null,
+        telegramId: data.telegramId || null,
+        birthday: data.birthday ? new Date(data.birthday) : null,
       },
     });
     return NextResponse.json(customer, { status: 201 });

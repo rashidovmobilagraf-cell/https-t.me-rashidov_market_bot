@@ -487,7 +487,13 @@ const AdminPanelPage = ({ products }) => {
   const handleDelete = async (id) => {
     if(window.confirm("O'chirasizmi?")) {
       try {
-        await fetch(`/api/products/${id}`, { method: 'DELETE' });
+        await fetch(`https://sbphcaletzugfqdvglmj.supabase.co/rest/v1/products?id=eq.${id}`, { 
+          method: 'DELETE',
+          headers: {
+            "apikey": "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR",
+            "Authorization": "Bearer sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR"
+          }
+        });
         setItems(items.filter(p => p.id !== id));
       } catch (e) {
         alert("Xatolik yuz berdi");
@@ -575,8 +581,19 @@ export default function App() {
 
   const t = (key, l) => tDict[l || lang]?.[key] || key;
 
+  const SUPABASE_URL = "https://sbphcaletzugfqdvglmj.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR";
+
   useEffect(() => {
-    fetch(`/api/products?t=${new Date().getTime()}`).then(res => res.json()).then(data => setProducts(data)).catch(() => {});
+    fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => setProducts(data))
+      .catch(err => console.error("Error fetching products:", err));
   }, []);
 
   const toggleFav = (id) => {

@@ -21,10 +21,29 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-slate-800">Boshqaruv Paneli</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-slate-800">Boshqaruv Paneli</h1>
+        <a 
+          href="/self-checkout" 
+          target="_blank"
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-transform hover:scale-105"
+        >
+          O'z-O'ziga Xizmat (Kiosk)
+        </a>
+      </div>
       
       {/* Financial Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="p-4 bg-emerald-100 text-emerald-600 rounded-xl">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Kassadagi Naqd Pul</p>
+            <p className="text-xl font-bold text-slate-800">{data?.cashInRegister?.toLocaleString()} so'm</p>
+          </div>
+        </div>
+
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
           <div className="p-4 bg-blue-100 text-blue-600 rounded-xl">
             <TrendingUp size={24} />
