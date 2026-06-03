@@ -31,13 +31,15 @@ const AdminPanelPage = ({ storeId }) => {
     if (storeId) url += `&store_id=eq.${storeId}`;
     fetch(url, { headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` } })
       .then(res => res.json())
-      .then(data => setItems(data));
+      .then(data => setItems(Array.isArray(data) ? data : []))
+      .catch(e => { console.error(e); setItems([]); });
       
     let ordersUrl = `${SUPABASE_URL}/rest/v1/orders?select=*&order=date.desc`;
     if (storeId) ordersUrl += `&store_id=eq.${storeId}`;
     fetch(ordersUrl, { headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` } })
       .then(res => res.json())
-      .then(data => setOrders(data));
+      .then(data => setOrders(Array.isArray(data) ? data : []))
+      .catch(e => { console.error(e); setOrders([]); });
   }, [storeId]);
 
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;

@@ -582,8 +582,8 @@ export default function App() {
       }
     })
       .then(res => res.json())
-      .then(data => setProducts(data))
-      .catch(err => console.error("Error fetching products:", err));
+      .then(data => setProducts(Array.isArray(data) ? data : []))
+      .catch(err => { console.error("Error fetching products:", err); setProducts([]); });
 
     if (storeId) {
       fetch(`${SUPABASE_URL}/rest/v1/stores?id=eq.${storeId}&select=*`, {
