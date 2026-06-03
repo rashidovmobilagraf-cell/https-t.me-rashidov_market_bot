@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { User, Search, ShoppingCart, Heart, Store, Grid, Plus, Minus, X, Trash2, ArrowLeft, Share2, MapPin, Truck, Wallet, FileText, ChevronRight, MessageSquare, Package, CreditCard } from 'lucide-react'
+import { User, Search, ShoppingCart, Heart, Store, Grid, Plus, Minus, X, Trash2, ArrowLeft, Share2, MapPin, Truck, Wallet, FileText, ChevronRight, MessageSquare, Package, CreditCard, Edit2, Copy, Camera } from 'lucide-react'
+import AdminPanelPage from './AdminPanelPage'
+const showAlert = (msg) => {
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+    window.Telegram.WebApp.showAlert(msg);
+  } else {
+    alert(msg);
+  }
+};
 
 const tDict = {
   uz: {
@@ -23,7 +31,14 @@ const Header = ({ title, subtitle, showBack = false, onBack, onProfile }) => {
         {showBack && <button className="icon-btn" onClick={onBack}><ArrowLeft size={24} /></button>}
       </div>
       <div className="header-center">
-        {title || "RM"}
+        {title === "RM" ? (
+          <div className="brand-logo">
+            <Store size={20} className="brand-icon" />
+            <span className="brand-text">Rashidov <span className="brand-highlight">Market</span></span>
+          </div>
+        ) : (
+          <span className="header-title">{title}</span>
+        )}
         {subtitle && <span className="header-subtitle">{subtitle}</span>}
       </div>
       <div className="header-right">
@@ -67,21 +82,36 @@ const BottomNav = ({ cartCount, favCount, t, lang }) => {
   );
 };
 
-// --- Product Card ---
 const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
   const isFav = favs.has(p.id);
+  let isOut = false;
+  let catName = p.category || '';
+  let stockStr = '';
+  if (catName.includes('||OUT_OF_STOCK')) {
+    isOut = true;
+    catName = catName.replace('||OUT_OF_STOCK', '');
+  } else if (catName.includes('||QTY:')) {
+    const parts = catName.split('||QTY:');
+    catName = parts[0];
+    stockStr = parts[1];
+    if (stockStr === '0') isOut = true;
+  }
 
   return (
-    <div className="p-card" onClick={() => onImageClick(p)}>
+    <div className="p-card" onClick={() => !isOut && onImageClick(p)} style={{opacity: isOut ? 0.6 : 1, position: 'relative'}}>
       <div className="p-img-wrap">
         <img src={p.image || `https://picsum.photos/seed/${p.name}/300`} alt={p.name} className="p-img" />
+        {isOut && <div style={{position: 'absolute', top: 8, left: 8, background: 'rgba(239,68,68,0.9)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6}}>QOLMAGAN</div>}
         <button className={`p-fav ${isFav ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleFav(p.id); }}>
           <Heart size={16} fill={isFav ? "currentColor" : "none"} />
         </button>
       </div>
       <div className="p-info">
         <div className="p-title">{p.name}</div>
-        <div className="p-unit">sht</div>
+        <div className="p-unit" style={{display:'flex', justifyContent:'space-between'}}>
+          <span>{catName || 'sht'}</span>
+          {stockStr && !isOut && <span style={{color:'#059669'}}>Zaxira: {stockStr}</span>}
+        </div>
         <div className="p-price">{p.price} so'm</div>
       </div>
     </div>
@@ -95,7 +125,22 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
   const qty = cart[product.id]?.quantity || 0;
   const isFav = favs.has(product.id);
 
-  const handleAdd = () => setCart(prev => ({ ...prev, [product.id]: { product, quantity: (prev[product.id]?.quantity || 0) + 1 } }));
+  let isOut = false;
+  let stockStr = '';
+  let catName = product.category || '';
+  if (catName.includes('||OUT_OF_STOCK')) {
+    isOut = true;
+  } else if (catName.includes('||QTY:')) {
+    const parts = catName.split('||QTY:');
+    stockStr = parts[1];
+    if (stockStr === '0') isOut = true;
+  }
+  const maxQty = stockStr ? parseInt(stockStr, 10) : Infinity;
+
+  const handleAdd = () => {
+    if (qty >= maxQty) return;
+    setCart(prev => ({ ...prev, [product.id]: { product, quantity: (prev[product.id]?.quantity || 0) + 1 } }));
+  };
   const handleDecrease = () => setCart(prev => {
     if (prev[product.id].quantity === 1) {
       const newCart = { ...prev };
@@ -123,7 +168,7 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
       
       <div className="m-info">
         <h2 className="m-title">{product.name}</h2>
-        <div className="m-stock">Mavjud: 5 sht</div>
+        <div className="m-stock">{stockStr ? `Mavjud: ${stockStr} ta` : 'Mavjud'}</div>
         <div className="m-price">{product.price} so'm</div>
         
         <div className="m-section-title">Variantlar</div>
@@ -156,12 +201,20 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
 // --- Pages ---
 
 const HomePage = ({ products, favs, toggleFav, onSelectProduct }) => {
-  const categories = Array.from(new Set(products.map(p => p.category || "Boshqa")));
+  const categories = Array.from(new Set(products.map(p => {
+    let c = p.category || "Boshqa";
+    if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
+    return c.replace('||OUT_OF_STOCK', '');
+  })));
   
   return (
     <div className="content">
       {categories.map(cat => {
-        const catProducts = products.filter(p => (p.category || "Boshqa") === cat);
+        const catProducts = products.filter(p => {
+          let c = p.category || "Boshqa";
+          if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
+          return c.replace('||OUT_OF_STOCK', '') === cat;
+        });
         return (
           <div key={cat} className="section">
             <div className="section-title">{cat}</div>
@@ -282,23 +335,40 @@ const CheckoutPage = ({ cart, setCart }) => {
   const total = itemsTotal + deliveryFee;
 
   const checkout = () => {
-    if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.sendData(JSON.stringify({
+    if (!window.Telegram?.WebApp) {
+      showAlert("Faqat Telegram ichida buyurtma berish mumkin!");
+      return;
+    }
+    window.Telegram.WebApp.sendData(JSON.stringify({
         action: 'checkout',
-        items: cartItems.map(i => ({id: i.product.id, name: i.product.name, price: i.product.price, qty: i.quantity})),
+        items: cartItems.map(i => ({id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity})),
         total: total,
         deliveryType: deliveryType,
         paymentType: paymentType,
         address: address,
         comment: comment
       }));
+  };
+
+  const handleLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setAddress({ ...address, house: `Lokatsiya (${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)})`, lat: pos.coords.latitude, lon: pos.coords.longitude });
+          showAlert("Manzil lokatsiya orqali aniqlandi!");
+        },
+        (err) => {
+          showAlert("Lokatsiyani olishning iloji bo'lmadi. Sozlamalardan ruxsat bering yoki qo'lda kiriting.");
+        },
+        { enableHighAccuracy: true }
+      );
     } else {
-      alert("Telegram'da ishlamayapti");
+      showAlert("Brauzeringiz lokatsiyani qo'llab-quvvatlamaydi.");
     }
   };
 
   return (
-    <div className="content" style={{paddingBottom: 100}}>
+    <div className="content cart-page-bg" style={{paddingBottom: 100}}>
       <div className="checkout-section">
         <div className="checkout-title">Buyurtma turi</div>
         <div className="segmented-control">
@@ -313,7 +383,7 @@ const CheckoutPage = ({ cart, setCart }) => {
         {deliveryType === 'delivery' ? (
           <>
             <div className="checkout-title" style={{marginTop: 16}}>Manzil</div>
-            <button className="btn-primary" style={{background: 'var(--primary)', color: '#fff', marginBottom: 12, fontSize: 14, padding: 12}}>+ Yangi manzil qo'shish (Lokatsiya)</button>
+            <button className="btn-primary" onClick={handleLocation} style={{background: 'var(--primary)', color: '#fff', marginBottom: 12, fontSize: 14, padding: 12}}>+ Yangi manzil qo'shish (Lokatsiya)</button>
             <div className="checkout-title" style={{marginTop: 16, fontSize: 13, color: 'var(--text-muted)'}}>Manzil tafsilotlari</div>
             <div style={{display: 'flex', gap: 12}}>
               <input type="text" className="input-field" placeholder="Uy" value={address.house} onChange={e => setAddress({...address, house: e.target.value})} />
@@ -407,7 +477,7 @@ const ProfileSupportPage = () => {
       ></textarea>
       <button className="btn-primary" onClick={() => { 
         if(!msg.trim()) return;
-        alert("Xabar yuborildi!"); 
+        showAlert("Xabar yuborildi!"); 
         window.history.back(); 
       }}>Yuborish</button>
     </div>
@@ -475,95 +545,7 @@ const ProfilePage = ({ lang, setLang, t }) => {
 };
 
 
-const AdminPanelPage = ({ products }) => {
-  const [items, setItems] = useState(products);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', image: '' });
-  
-  useEffect(() => {
-    setItems(products);
-  }, [products]);
 
-  const handleDelete = async (id) => {
-    if(window.confirm("O'chirasizmi?")) {
-      try {
-        await fetch(`https://sbphcaletzugfqdvglmj.supabase.co/rest/v1/products?id=eq.${id}`, { 
-          method: 'DELETE',
-          headers: {
-            "apikey": "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR",
-            "Authorization": "Bearer sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR"
-          }
-        });
-        setItems(items.filter(p => p.id !== id));
-      } catch (e) {
-        alert("Xatolik yuz berdi");
-      }
-    }
-  };
-
-  const handleAdd = async () => {
-    if(!newProduct.name || !newProduct.price) return alert("To'ldiring!");
-    try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProduct)
-      });
-      const data = await res.json();
-      if(data.success) {
-        setItems([...items, data.product]);
-        setShowAdd(false);
-        setNewProduct({ name: '', price: '', category: '', image: '' });
-      } else {
-        alert("Xatolik!");
-      }
-    } catch (e) {
-      alert("Xatolik yuz berdi");
-    }
-  };
-
-  return (
-    <div className="content" style={{padding: 16, background: '#f5f5f5', minHeight: '100vh'}}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
-        <h2 style={{margin: 0}}>Boshqaruv Paneli</h2>
-        <button className="btn-primary" style={{padding: '8px 16px', width: 'auto'}} onClick={() => setShowAdd(true)}>
-          <Plus size={16} style={{marginRight: 4}} /> Qo'shish
-        </button>
-      </div>
-
-      {showAdd && (
-        <div style={{background: '#fff', padding: 16, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.05)'}}>
-          <h3 style={{marginTop: 0, marginBottom: 16}}>Yangi mahsulot</h3>
-          <input className="input-field" placeholder="Nomi (masalan: Cola 1L)" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} style={{marginBottom: 12}} />
-          <input className="input-field" type="number" placeholder="Narxi (masalan: 12000)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} style={{marginBottom: 12}} />
-          <input className="input-field" placeholder="Kategoriya (masalan: Ichimliklar)" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} style={{marginBottom: 12}} />
-          <input className="input-field" placeholder="Rasm havolasi (URL yoki bo'sh joy qoldiring)" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} style={{marginBottom: 12}} />
-          <div style={{display: 'flex', gap: 8}}>
-            <button className="btn-primary" onClick={handleAdd} style={{flex: 1}}>Saqlash</button>
-            <button className="btn-secondary" onClick={() => setShowAdd(false)} style={{flex: 1, background: '#e2e8f0', color: '#333'}}>Bekor qilish</button>
-          </div>
-        </div>
-      )}
-
-      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-        {items.map(p => (
-          <div key={p.id} style={{background: '#fff', padding: 12, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)'}}>
-            <img src={p.image || "https://picsum.photos/300"} alt={p.name} style={{width: 60, height: 60, objectFit: 'cover', borderRadius: 8}} />
-            <div style={{flex: 1}}>
-              <div style={{fontWeight: 600}}>{p.name}</div>
-              <div style={{color: 'var(--primary)', fontWeight: 500}}>{p.price} so'm</div>
-              <div style={{color: '#888', fontSize: 12}}>{p.category}</div>
-            </div>
-            <button className="icon-btn" style={{color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: 8, height: 'auto', width: 'auto', borderRadius: 8}} onClick={() => handleDelete(p.id)}>
-              <Trash2 size={18} />
-            </button>
-          </div>
-        ))}
-        {items.length === 0 && <div style={{textAlign: 'center', color: '#888', marginTop: 32}}>Mahsulotlar yo'q</div>}
-      </div>
-    </div>
-  );
-};
 
 export default function App() {
 
@@ -584,8 +566,16 @@ export default function App() {
   const SUPABASE_URL = "https://sbphcaletzugfqdvglmj.supabase.co";
   const SUPABASE_KEY = "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR";
 
+  // Multi-tenant: get store_id from URL
+  const queryParams = new URLSearchParams(location.search);
+  const storeId = queryParams.get('store_id');
+  const [storeInfo, setStoreInfo] = useState(null);
+
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+    let url = `${SUPABASE_URL}/rest/v1/products?select=*`;
+    if (storeId) url += `&store_id=eq.${storeId}`;
+    
+    fetch(url, {
       headers: {
         "apikey": SUPABASE_KEY,
         "Authorization": `Bearer ${SUPABASE_KEY}`
@@ -594,7 +584,27 @@ export default function App() {
       .then(res => res.json())
       .then(data => setProducts(data))
       .catch(err => console.error("Error fetching products:", err));
-  }, []);
+
+    if (storeId) {
+      fetch(`${SUPABASE_URL}/rest/v1/stores?id=eq.${storeId}&select=*`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+           const store = data[0];
+           setStoreInfo(store);
+           // Apply dynamic theme color
+           if (store.theme_color) {
+             document.documentElement.style.setProperty('--primary', store.theme_color);
+           }
+        }
+      });
+    }
+  }, [storeId]);
 
   const toggleFav = (id) => {
     setFavs(prev => {
@@ -613,7 +623,7 @@ export default function App() {
     if (location.pathname === '/profile/info') return t('info', lang);
     if (location.pathname === '/profile/orders') return t('orders', lang);
     if (location.pathname === '/profile/support') return t('support', lang);
-    return "RM";
+    return storeInfo ? storeInfo.store_name : "Market";
   };
   const getSubtitle = () => {
     return null;
@@ -639,7 +649,7 @@ export default function App() {
       {location.pathname === '/checkout' && <Header title="RM" showBack={true} onBack={() => navigate(-1)} />}
       
       <Routes>
-        <Route path="/admin-panel" element={<AdminPanelPage products={products} />} />
+        <Route path="/admin-panel" element={<AdminPanelPage storeId={storeId} />} />
         <Route path="/" element={<HomePage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/menu" element={<MenuPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/favorites" element={<FavoritesPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
