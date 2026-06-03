@@ -116,11 +116,10 @@ const AdminPanelPage = ({ storeId }) => {
   };
 
   const openEdit = (p) => {
-    let parsedName = p.name;
-    let nUz = p.name, nRu = '';
+    let nUz = p.name || '', nRu = '';
     try {
         const j = JSON.parse(p.name);
-        if(j.uz) { nUz = j.uz; nRu = j.ru || ''; }
+        if(j && j.uz) { nUz = j.uz; nRu = j.ru || ''; }
     } catch(e) {}
     
     let cleanCat = p.category || '';
@@ -186,8 +185,8 @@ const AdminPanelPage = ({ storeId }) => {
 
   const filteredItems = items.filter(p => {
       if(!searchQ) return true;
-      let n = p.name;
-      try{ const j=JSON.parse(p.name); n=j.uz+" "+j.ru; }catch(e){}
+      let n = p.name || '';
+      try{ const j=JSON.parse(p.name); if(j) n=j.uz+" "+j.ru; }catch(e){}
       return n.toLowerCase().includes(searchQ.toLowerCase());
   });
 
@@ -222,8 +221,8 @@ const AdminPanelPage = ({ storeId }) => {
 
           <div style={{display: 'flex', flexDirection: 'column'}}>
             {filteredItems.map(p => {
-              let dispName = p.name;
-              try { const j = JSON.parse(p.name); dispName = j.uz; } catch(e){}
+              let dispName = p.name || '';
+              try { const j = JSON.parse(p.name); if(j && j.uz) dispName = j.uz; } catch(e){}
               let c = p.category || '';
               let qStr = null;
               if (c.includes('||QTY:')) qStr = c.split('||QTY:')[1].split('||')[0];
@@ -264,8 +263,8 @@ const AdminPanelPage = ({ storeId }) => {
               </div>
               <div style={{marginBottom: 12, fontSize: 13, color: '#475569', background: '#f8fafc', padding: 12, borderRadius: 12}}>
                 {o.items?.map((i, idx) => {
-                    let n = i.name;
-                    try { const j = JSON.parse(i.name); n = j.uz; } catch(e){}
+                    let n = i.name || '';
+                    try { const j = JSON.parse(i.name); if(j && j.uz) n = j.uz; } catch(e){}
                     return <div key={idx} style={{marginBottom: 4}}>• {n} <b style={{color:'#000'}}>x{i.quantity || i.qty}</b></div>
                 })}
               </div>
