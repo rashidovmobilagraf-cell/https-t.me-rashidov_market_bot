@@ -138,7 +138,7 @@ const AdminPanelPage = ({ storeId }) => {
     setNewProduct({
         nameUz: nUz, nameRu: nRu, price: p.price,
         discountToggle: false, discountPrice: '', // For now, not parsing discount from price string, just keeping basic
-        category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image || ''
+        category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image_url || ''
     });
     setShowAdd(true);
   };
@@ -156,7 +156,7 @@ const AdminPanelPage = ({ storeId }) => {
         priceData = `${newProduct.discountPrice} so'm (Chegirma)`; // Quick hack for simple display, ideally store real price
     }
 
-    const payload = { name: nameData, price: priceData, category: catData, image: newProduct.image };
+    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image };
     if (storeId) payload.store_id = storeId;
     
     try {
@@ -228,7 +228,7 @@ const AdminPanelPage = ({ storeId }) => {
               if (c.includes('||QTY:')) qStr = c.split('||QTY:')[1].split('||')[0];
               return (
                 <div key={p.id} className="admin-card">
-                  <img src={p.image || "https://picsum.photos/300"} alt={dispName} className="admin-card-img" />
+                  <img src={p.image_url || "https://picsum.photos/300"} alt={dispName} className="admin-card-img" />
                   <div className="admin-card-info">
                     <div className="admin-card-title">{dispName}</div>
                     <div className="admin-card-price">{p.price}</div>

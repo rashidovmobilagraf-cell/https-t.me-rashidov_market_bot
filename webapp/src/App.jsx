@@ -100,7 +100,7 @@ const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
   return (
     <div className="p-card" onClick={() => !isOut && onImageClick(p)} style={{opacity: isOut ? 0.6 : 1, position: 'relative'}}>
       <div className="p-img-wrap">
-        <img src={p.image || `https://picsum.photos/seed/${p.name}/300`} alt={p.name} className="p-img" />
+        <img src={p.image_url || `https://picsum.photos/seed/${p.name}/300`} alt={p.name} className="p-img" />
         {isOut && <div style={{position: 'absolute', top: 8, left: 8, background: 'rgba(239,68,68,0.9)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6}}>QOLMAGAN</div>}
         <button className={`p-fav ${isFav ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleFav(p.id); }}>
           <Heart size={16} fill={isFav ? "currentColor" : "none"} />
@@ -164,7 +164,7 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
           <button className="m-icon-btn" onClick={onClose}><X size={20} /></button>
         </div>
       </div>
-      <img src={product.image || `https://picsum.photos/seed/${product.name}/500`} alt={product.name} className="m-img" />
+      <img src={product.image_url || `https://picsum.photos/seed/${product.name}/500`} alt={product.name} className="m-img" />
       
       <div className="m-info">
         <h2 className="m-title">{product.name}</h2>
@@ -286,7 +286,7 @@ const CartPage = ({ cart, setCart }) => {
           {cartItems.map((item, idx) => (
             <div key={idx} className="c-item">
               <div className="c-item-row">
-                <img src={item.product.image || `https://picsum.photos/seed/${item.product.name}/100`} alt={item.product.name} className="c-img" />
+                <img src={item.product.image_url || `https://picsum.photos/seed/${item.product.name}/100`} alt={item.product.name} className="c-img" />
                 <div className="c-info">
                   <div className="c-title">{item.product.name}</div>
                   <div className="c-variant">Variant: {item.product.name}</div>
