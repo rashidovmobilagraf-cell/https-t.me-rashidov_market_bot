@@ -34,7 +34,7 @@ const Header = ({ title, subtitle, showBack = false, onBack, onProfile }) => {
         {title === "RM" ? (
           <div className="brand-logo">
             <Store size={20} className="brand-icon" />
-            <span className="brand-text">Rashidov <span className="brand-highlight">Market</span></span>
+            <span className="brand-text">YONMA YON <span className="brand-highlight">MARKET</span></span>
           </div>
         ) : (
           <span className="header-title">{title}</span>
