@@ -322,89 +322,22 @@ input, textarea { -webkit-user-select: auto !important; user-select: auto !impor
   color: #1e293b;
 }
 
-/* Premium Image Upload */
-.premium-image-upload {
-  display: block;
-  width: 100%;
-  margin-bottom: 24px;
-  cursor: pointer;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  background: #ffffff;
-  border: 2px dashed rgba(13, 148, 114, 0.3);
-}
-
-.premium-image-upload:active {
-  transform: scale(0.98);
-}
-
-.premium-image-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
-  background: linear-gradient(145deg, rgba(13,148,114,0.02) 0%, rgba(13,148,114,0.08) 100%);
-}
-
-.premium-image-icon-wrapper {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 16px rgba(13, 148, 114, 0.1);
-}
-
-.premium-image-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.premium-image-subtitle {
-  font-size: 13px;
-  color: #64748b;
+/* Image Upload Dropzone */
+.image-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 24px;
   text-align: center;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: all 0.2s;
+  margin-bottom: 16px;
 }
-
-.premium-image-preview-container {
-  position: relative;
+.image-dropzone:active { background: #f1f5f9; border-color: var(--primary); }
+.image-preview {
   width: 100%;
-  height: 200px;
-}
-
-.premium-image-preview {
-  width: 100%;
-  height: 100%;
+  height: 150px;
   object-fit: cover;
-}
-
-.premium-image-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.premium-image-preview-container:active .premium-image-overlay {
-  opacity: 1;
-}
-
-.premium-image-overlay span {
-  font-weight: 600;
-  margin-top: 8px;
-  font-size: 14px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }

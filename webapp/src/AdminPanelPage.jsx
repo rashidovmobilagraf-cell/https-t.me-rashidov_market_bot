@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Copy, Search, X, Camera, Package, ImagePlus } from 'lucide-react';
+import { Plus, Trash2, Edit2, Copy, Search, X, Camera, Package } from 'lucide-react';
 
 const showAlert = (msg) => {
   if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
@@ -295,22 +295,13 @@ const AdminPanelPage = ({ storeId }) => {
               </button>
             </div>
 
-            <label className="premium-image-upload">
+            <label className="image-dropzone">
               {newProduct.image ? (
-                <div className="premium-image-preview-container">
-                  <img src={newProduct.image} alt="preview" className="premium-image-preview" />
-                  <div className="premium-image-overlay">
-                    <Camera size={24} color="#fff" />
-                    <span>Boshqa rasm tanlash</span>
-                  </div>
-                </div>
+                <img src={newProduct.image} alt="preview" className="image-preview" />
               ) : (
-                <div className="premium-image-placeholder">
-                  <div className="premium-image-icon-wrapper">
-                    <ImagePlus size={32} color="var(--primary)" />
-                  </div>
-                  <span className="premium-image-title">Rasm yuklash (Bosish)</span>
-                  <span className="premium-image-subtitle">Mahsulot uchun aniq va sifatli rasm tanlang</span>
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8', padding: '20px 0'}}>
+                  <Camera size={40} style={{marginBottom: 12}} />
+                  <span style={{fontWeight: 500}}>Rasm yuklash (Bosish)</span>
                 </div>
               )}
               <input type="file" accept="image/*" onChange={handleImageUpload} style={{display: 'none'}} />
