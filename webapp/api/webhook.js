@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     const BOT_TOKEN = store.bot_token;
     const ADMIN_ID = store.owner_id;
     const STORE_NAME = store.store_name;
-    const WEBAPP_URL = `https://webapp-kohl-kappa.vercel.app/?store_id=${botId}&v=19`;
+    const WEBAPP_URL = `https://webapp-kohl-kappa.vercel.app/?store_id=${botId}&v=20`;
 
     const tgUrl = `https://api.telegram.org/bot${BOT_TOKEN}`;
 

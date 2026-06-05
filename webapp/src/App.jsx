@@ -31,7 +31,7 @@ const Header = ({ title, subtitle, showBack = false, onBack, onProfile }) => {
         {showBack && <button className="icon-btn" onClick={onBack}><ArrowLeft size={24} /></button>}
       </div>
       <div className="header-center">
-        {title === "RM" ? (
+        {title === "RM" || title === "YONMA YON MARKET" ? (
           <div className="brand-logo-custom">
             <div className="brand-y-icon">Y</div>
             <div className="brand-text-col">
