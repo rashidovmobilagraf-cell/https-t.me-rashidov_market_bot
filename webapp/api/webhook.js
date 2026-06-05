@@ -114,7 +114,7 @@ export default async function handler(req, res) {
     const BOT_TOKEN = store.bot_token;
     const ADMIN_ID = store.owner_id;
     const STORE_NAME = store.store_name;
-    const WEBAPP_URL = `https://webapp-kohl-kappa.vercel.app/?store_id=${botId}&v=21`;
+    const WEBAPP_URL = `https://webapp-kohl-kappa.vercel.app/?store_id=${botId}&v=22`;
 
     const tgUrl = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
@@ -231,7 +231,7 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true });
         }
         const markup = {
-          inline_keyboard: [[{ text: "⚙️ Boshqaruv Paneli", web_app: { url: `https://webapp-kohl-kappa.vercel.app/admin-panel?store_id=${botId}&v=6` } }]]
+          inline_keyboard: [[{ text: "⚙️ Boshqaruv Paneli", web_app: { url: `https://webapp-kohl-kappa.vercel.app/admin-panel?store_id=${botId}&v=7` } }]]
         };
         await sendMsg(chatId, `<b>${STORE_NAME}</b> admin paneliga xush kelibsiz:`, markup);
       }
