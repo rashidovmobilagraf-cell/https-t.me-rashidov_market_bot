@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Copy, Search, X, Camera, Package, ImagePlus } from 'lucide-react';
-
+import { AnalyticsTab, PromoTab, BroadcastTab, SettingsTab } from './AdminTabs';
 const showAlert = (msg) => {
   if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
     window.Telegram.WebApp.showAlert(msg);
@@ -20,7 +20,7 @@ const AdminPanelPage = ({ storeId }) => {
   const [newProduct, setNewProduct] = useState({ 
     nameUz: '', nameRu: '', 
     price: '', discountToggle: false, discountPrice: '',
-    category: '', unit: 'dona', image: '', stockQty: '' 
+    category: '', unit: 'dona', image: '', stockQty: '', is_bestseller: false
   });
   
   const SUPABASE_URL = "https://sbphcaletzugfqdvglmj.supabase.co";
@@ -164,7 +164,8 @@ const AdminPanelPage = ({ storeId }) => {
     setNewProduct({
         nameUz: nUz, nameRu: nRu, price: p.price,
         discountToggle: false, discountPrice: '', // For now, not parsing discount from price string, just keeping basic
-        category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image_url || ''
+        category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image_url || '',
+        is_bestseller: !!p.is_bestseller
     });
     setShowAdd(true);
   };
@@ -182,7 +183,7 @@ const AdminPanelPage = ({ storeId }) => {
         priceData = `${newProduct.discountPrice} so'm (Chegirma)`; // Quick hack for simple display, ideally store real price
     }
 
-    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image };
+    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image, is_bestseller: !!newProduct.is_bestseller };
     if (storeId) payload.store_id = storeId;
     
     try {
@@ -219,14 +220,19 @@ const AdminPanelPage = ({ storeId }) => {
   return (
     <div className="content" style={{padding: 16, background: '#f8fafc', minHeight: '100vh', paddingBottom: 100}}>
       
-      <div className="admin-tab-bar">
-        <button className={`admin-tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
-          📦 Mahsulotlar
-        </button>
-        <button className={`admin-tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-          📝 Buyurtmalar
-        </button>
+      <div className="admin-tab-bar" style={{overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 10, display: 'flex', gap: 8}}>
+        <button className={`admin-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>📊 Analitika</button>
+        <button className={`admin-tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>📦 Mahsulotlar</button>
+        <button className={`admin-tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>📝 Buyurtmalar</button>
+        <button className={`admin-tab-btn ${activeTab === 'promo' ? 'active' : ''}`} onClick={() => setActiveTab('promo')}>🎟 Promokod</button>
+        <button className={`admin-tab-btn ${activeTab === 'broadcast' ? 'active' : ''}`} onClick={() => setActiveTab('broadcast')}>📣 Rassilka</button>
+        <button className={`admin-tab-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>⚙️ Sozlamalar</button>
       </div>
+
+      {activeTab === 'analytics' && <AnalyticsTab orders={orders} />}
+      {activeTab === 'promo' && <PromoTab storeId={storeId} />}
+      {activeTab === 'broadcast' && <BroadcastTab storeId={storeId} />}
+      {activeTab === 'settings' && <SettingsTab storeId={storeId} />}
 
       {activeTab === 'products' && (
         <>
@@ -385,6 +391,11 @@ const AdminPanelPage = ({ storeId }) => {
                   <input className="input-field" type="text" inputMode="numeric" placeholder="20000" value={newProduct.discountPrice} onChange={e => setNewProduct({...newProduct, discountPrice: e.target.value})} style={{borderColor: '#fca5a5'}} />
                 </>
             )}
+
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12}}>
+                <span style={{fontWeight: 600, color: '#334155'}}>Bestseller (Tavsiya etamiz) ⭐️</span>
+                <input type="checkbox" checked={newProduct.is_bestseller} onChange={e => setNewProduct({...newProduct, is_bestseller: e.target.checked})} style={{width: 20, height: 20, accentColor: 'var(--primary)'}} />
+            </div>
 
             <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Zaxirada mavjud (dona)</div>
             <input className="input-field" type="text" inputMode="numeric" placeholder="Masalan: 100. Bo'sh qolsa cheksiz" value={newProduct.stockQty} onChange={e => setNewProduct({...newProduct, stockQty: e.target.value})} />

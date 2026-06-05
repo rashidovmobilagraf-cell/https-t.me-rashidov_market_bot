@@ -210,8 +210,22 @@ const HomePage = ({ products, favs, toggleFav, onSelectProduct }) => {
     return c.replace('||OUT_OF_STOCK', '');
   })));
   
+  const bestsellers = products.filter(p => p.is_bestseller);
+
   return (
     <div className="content">
+      {bestsellers.length > 0 && (
+        <div className="section" style={{marginBottom: 8}}>
+            <div className="section-title">⭐️ Tavsiya etamiz</div>
+            <div style={{display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12, scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+                {bestsellers.map(p => (
+                   <div key={p.id} style={{minWidth: 140, width: 140}}>
+                      <ProductCard p={p} favs={favs} toggleFav={toggleFav} onImageClick={onSelectProduct} />
+                   </div>
+                ))}
+            </div>
+        </div>
+      )}
       {categories.map(cat => {
         const catProducts = products.filter(p => {
           let c = p.category || "Boshqa";
@@ -324,18 +338,75 @@ const CartPage = ({ cart, setCart }) => {
 
 const ArrowRight = ({ size, style }) => <ChevronRight size={size} style={style} />;
 
-const CheckoutPage = ({ cart, setCart }) => {
+const CheckoutPage = ({ cart, setCart, storeInfo }) => {
   const [deliveryType, setDeliveryType] = useState('delivery');
   const [paymentType, setPaymentType] = useState('cash');
-  const [address, setAddress] = useState({ house: "", apt: "", code: "", phone: "+998" });
+  const [address, setAddress] = useState({ house: "", apt: "", code: "", phone: "+998", lat: null, lon: null });
+  const [cashbackBalance, setCashbackBalance] = useState(0);
+  const [useCashback, setUseCashback] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoApplied, setPromoApplied] = useState(false);
   
   const location = useLocation();
   const comment = location.state?.comment || "";
-  
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+  useEffect(() => {
+     if (tgUser?.id && storeInfo?.id) {
+         fetch(`https://sbphcaletzugfqdvglmj.supabase.co/rest/v1/customers?user_id=eq.${tgUser.id}&store_id=eq.${storeInfo.id}`, {
+            headers: { "apikey": "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR", "Authorization": "Bearer sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR" }
+         }).then(r=>r.json()).then(d => { if(d&&d.length>0) setCashbackBalance(parseFloat(d[0].balance)||0); });
+     }
+  }, [tgUser?.id, storeInfo?.id]);
+
   const cartItems = Object.values(cart);
   const itemsTotal = cartItems.reduce((sum, item) => sum + (item.quantity * parseFloat(item.product.price)), 0);
-  const deliveryFee = deliveryType === 'delivery' ? 1000 : 0;
-  const total = itemsTotal + deliveryFee;
+
+  const applyPromo = async () => {
+      if(!promoCode || !storeInfo?.id) return;
+      try {
+          const res = await fetch(`https://sbphcaletzugfqdvglmj.supabase.co/rest/v1/promo_codes?code=eq.${promoCode.toUpperCase()}&store_id=eq.${storeInfo.id}`, {
+              headers: { "apikey": "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR", "Authorization": "Bearer sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR" }
+          });
+          const d = await res.json();
+          if (d && d.length > 0) {
+              const promo = d[0];
+              setPromoDiscount(promo.is_percent ? (itemsTotal * promo.discount / 100) : promo.discount);
+              setPromoApplied(true);
+              showAlert("Promokod faollashdi!");
+          } else {
+              showAlert("Xato yoki muddati o'tgan promokod!");
+              setPromoApplied(false);
+              setPromoDiscount(0);
+          }
+      } catch(e) {}
+  };
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371; // km
+      const dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  };
+  
+  let deliveryFee = 0;
+  if (deliveryType === 'delivery') {
+      if (storeInfo?.delivery_price && storeInfo?.lat && storeInfo?.lon && address.lat && address.lon) {
+          const dist = getDistance(storeInfo.lat, storeInfo.lon, address.lat, address.lon);
+          deliveryFee = Math.max(0, Math.round(dist * storeInfo.delivery_price));
+      } else {
+          deliveryFee = 5000; // default base delivery
+      }
+  }
+
+  let finalTotal = itemsTotal + deliveryFee - promoDiscount;
+  let cashbackUsed = 0;
+  if (useCashback && cashbackBalance > 0) {
+      cashbackUsed = Math.min(cashbackBalance, finalTotal);
+      finalTotal -= cashbackUsed;
+  }
+  finalTotal = Math.max(0, finalTotal);
 
   const checkout = () => {
     if (!window.Telegram?.WebApp) {
@@ -345,11 +416,13 @@ const CheckoutPage = ({ cart, setCart }) => {
     window.Telegram.WebApp.sendData(JSON.stringify({
         action: 'checkout',
         items: cartItems.map(i => ({id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity})),
-        total: total,
+        total: finalTotal,
         deliveryType: deliveryType,
         paymentType: paymentType,
         address: address,
-        comment: comment
+        comment: comment,
+        cashbackUsed,
+        promoCode: promoApplied ? promoCode : null
       }));
   };
 
@@ -412,13 +485,33 @@ const CheckoutPage = ({ cart, setCart }) => {
           <button className={`seg-btn ${paymentType === 'cash' ? 'active' : ''}`} onClick={() => setPaymentType('cash')} style={{flex: '1 1 45%'}}>
             <Wallet size={16} /> Naqd pul
           </button>
-          <button className={`seg-btn ${paymentType === 'click' ? 'active' : ''}`} onClick={() => setPaymentType('click')} style={{flex: '1 1 45%'}}>
-            <CreditCard size={16} /> Click
-          </button>
-          <button className={`seg-btn ${paymentType === 'payme' ? 'active' : ''}`} onClick={() => setPaymentType('payme')} style={{flex: '1 1 45%'}}>
-            <CreditCard size={16} /> Payme
+          <button className={`seg-btn ${paymentType === 'card' ? 'active' : ''}`} onClick={() => setPaymentType('card')} style={{flex: '1 1 45%'}}>
+            <CreditCard size={16} /> Karta orqali
           </button>
         </div>
+        
+        {paymentType === 'card' && storeInfo?.card_number && (
+            <div style={{marginTop: 12, padding: 12, background: '#f8fafc', borderRadius: 8, fontSize: 13, color: '#334155', border: '1px solid #e2e8f0'}}>
+                Iltimos, ushbu kartaga to'lovni amalga oshiring:<br/>
+                <strong style={{fontSize: 16, display: 'block', marginTop: 4}}>{storeInfo.card_number}</strong>
+            </div>
+        )}
+
+        <div className="checkout-title" style={{marginTop: 16}}>Promokod</div>
+        <div style={{display: 'flex', gap: 8}}>
+            <input className="input-field" placeholder="Kodni yozing" value={promoCode} onChange={e=>setPromoCode(e.target.value)} disabled={promoApplied} style={{marginBottom: 0, flex: 1}}/>
+            <button className="btn-primary" onClick={applyPromo} disabled={promoApplied} style={{width: 'auto', padding: '0 16px', borderRadius: 12}}>{promoApplied ? 'Faol' : "Qo'llash"}</button>
+        </div>
+
+        {cashbackBalance > 0 && (
+            <div style={{marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(13, 148, 114, 0.05)', borderRadius: 12, border: '1px solid rgba(13, 148, 114, 0.2)'}}>
+                <div>
+                    <div style={{fontWeight: 600, color: 'var(--primary)', fontSize: 14}}>Keshbek mavjud 🎁</div>
+                    <div style={{fontSize: 12, color: '#64748b'}}>Balans: {cashbackBalance.toLocaleString()} so'm</div>
+                </div>
+                <input type="checkbox" checked={useCashback} onChange={e => setUseCashback(e.target.checked)} style={{width: 20, height: 20, accentColor: 'var(--primary)'}} />
+            </div>
+        )}
         
         <div style={{marginTop: 16}}>
           <div className="summary-row">
@@ -429,9 +522,21 @@ const CheckoutPage = ({ cart, setCart }) => {
             <span style={{display: 'flex', alignItems: 'center', gap: 8}}><Truck size={16} color="var(--text-muted)"/> Xizmat:</span>
             <span>{deliveryFee.toLocaleString()} so'm</span>
           </div>
+          {promoApplied && (
+              <div className="summary-row" style={{color: '#0ea5e9'}}>
+                <span>Chegirma:</span>
+                <span>-{promoDiscount.toLocaleString()} so'm</span>
+              </div>
+          )}
+          {useCashback && cashbackUsed > 0 && (
+              <div className="summary-row" style={{color: 'var(--primary)'}}>
+                <span>Keshbekdan:</span>
+                <span>-{cashbackUsed.toLocaleString()} so'm</span>
+              </div>
+          )}
           <div className="summary-total">
             <span>Jami:</span>
-            <span style={{color: 'var(--primary)'}}>{total.toLocaleString()} so'm</span>
+            <span style={{color: 'var(--primary)'}}>{finalTotal.toLocaleString()} so'm</span>
           </div>
         </div>
       </div>
@@ -671,7 +776,7 @@ export default function App() {
         <Route path="/menu" element={<MenuPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/favorites" element={<FavoritesPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
-        <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} />} />
+        <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} storeInfo={storeInfo} />} />
         <Route path="/profile" element={<ProfilePage lang={lang} setLang={setLang} t={t} />} />
         <Route path="/profile/info" element={<ProfileInfoPage />} />
         <Route path="/profile/orders" element={<ProfileOrdersPage />} />

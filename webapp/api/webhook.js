@@ -28,6 +28,34 @@ export default async function handler(req, res) {
     const body = req.body || {};
     
     // 1. Admin Panel API call (from frontend)
+    if (body.action === 'broadcast') {
+      const { storeId, text, photo } = body;
+      const stores = await supabaseReq('GET', `stores?id=eq.${storeId}`);
+      if (!stores || stores.length === 0) return res.status(200).json({ ok: false });
+      const botToken = stores[0].bot_token;
+      
+      const orders = await supabaseReq('GET', `orders?store_id=eq.${storeId}&select=user_id`);
+      let count = 0;
+      if (orders && orders.length > 0) {
+        const uniqueUsers = [...new Set(orders.map(o => o.user_id))];
+        for (const uid of uniqueUsers) {
+          try {
+            const method = photo ? 'sendPhoto' : 'sendMessage';
+            const payload = { chat_id: uid, parse_mode: 'HTML' };
+            if (photo) { payload.photo = photo; payload.caption = text; }
+            else { payload.text = text; }
+            await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            count++;
+          } catch(e){}
+        }
+      }
+      return res.status(200).json({ ok: true, count });
+    }
+
     if (body.action === 'update_status') {
       const { orderId, newStatus, userId, storeId } = body;
       await supabaseReq('PATCH', `orders?order_id=eq.${orderId}`, { status: newStatus });
@@ -39,7 +67,27 @@ export default async function handler(req, res) {
             const botToken = stores[0].bot_token;
             let statusText = "";
             if (newStatus === 'Yetkazilmoqda') statusText = `🚚 <b>Buyurtma #${orderId} yo'lga chiqdi!</b>\nTez orada yetkazib beriladi. Kuting!`;
-            if (newStatus === 'Bajarildi') statusText = `✅ <b>Buyurtma #${orderId} yetkazib berildi!</b>\nXarid uchun rahmat. Yana kutib qolamiz!`;
+            if (newStatus === 'Bajarildi') {
+                statusText = `✅ <b>Buyurtma #${orderId} yetkazib berildi!</b>\nXarid uchun rahmat. Yana kutib qolamiz!`;
+                // CASHBACK LOGIC
+                try {
+                  const orderRes = await supabaseReq('GET', `orders?order_id=eq.${orderId}&select=total`);
+                  if (orderRes && orderRes.length > 0) {
+                      const total = parseFloat(orderRes[0].total) || 0;
+                      const cashback = Math.round(total * 0.05);
+                      if (cashback > 0) {
+                          const userRes = await supabaseReq('GET', `customers?user_id=eq.${userId}&store_id=eq.${storeId}&select=balance,id`);
+                          if (userRes && userRes.length > 0) {
+                              const newBal = (parseFloat(userRes[0].balance) || 0) + cashback;
+                              await supabaseReq('PATCH', `customers?id=eq.${userRes[0].id}`, { balance: newBal });
+                          } else {
+                              await supabaseReq('POST', `customers`, { user_id: userId, store_id: storeId, balance: cashback });
+                          }
+                          statusText += `\n\n🎁 Sizning hisobingizga ${cashback.toLocaleString()} so'm keshbek tushdi! Keyingi xaridda ishlating.`;
+                      }
+                  }
+                } catch(e) {}
+            }
             if (newStatus === 'Bekor qilingan') statusText = `❌ <b>Buyurtma #${orderId} bekor qilindi.</b>\nMa'lumot uchun admin bilan bog'laning.`;
             
             if (statusText) {
@@ -111,6 +159,17 @@ export default async function handler(req, res) {
           date: new Date().toISOString()
         };
         await supabaseReq('POST', 'orders', orderData);
+
+        // Deduct cashback if used
+        if (data.cashbackUsed > 0) {
+           try {
+             const userRes = await supabaseReq('GET', `customers?user_id=eq.${msg.from.id}&store_id=eq.${botId}&select=balance,id`);
+             if (userRes && userRes.length > 0) {
+                const newBal = Math.max(0, parseFloat(userRes[0].balance) - data.cashbackUsed);
+                await supabaseReq('PATCH', `customers?id=eq.${userRes[0].id}`, { balance: newBal });
+             }
+           } catch(e) {}
+        }
 
         // Mantiq: Sotib olingan mahsulotlar sonini ayirish
         if (data.items && data.items.length > 0) {
