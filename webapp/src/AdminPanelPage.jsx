@@ -59,7 +59,7 @@ const AdminPanelPage = ({ storeId }) => {
       const res = await fetch('https://webapp-kohl-kappa.vercel.app/api/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_status', orderId, newStatus, userId })
+        body: JSON.stringify({ action: 'update_status', orderId, newStatus, userId, storeId })
       });
       if (res.ok) {
         setOrders(orders.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o));
