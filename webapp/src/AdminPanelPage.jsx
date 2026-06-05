@@ -350,6 +350,13 @@ const AdminPanelPage = ({ storeId }) => {
 
             <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Kategoriya</div>
             <input className="input-field" placeholder="Masalan: Ichimliklar" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+            <div style={{display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginTop: 8}}>
+              {["Shirinliklar", "O'yinchoqlar", "Xo'jalik mollari", "Ichimliklar", "Sut mahsulotlari", "Go'sht mahsulotlari", "Un mahsulotlari", "Meva-sabzavotlar", "Pishiriqlar"].map(c => (
+                <div key={c} onClick={() => setNewProduct({...newProduct, category: c})} style={{padding: '6px 14px', background: newProduct.category === c ? 'var(--primary)' : '#f1f5f9', color: newProduct.category === c ? '#fff' : '#475569', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'}}>
+                  {c}
+                </div>
+              ))}
+            </div>
 
             <div style={{display: 'flex', gap: 12}}>
                 <div style={{flex: 1}}>
