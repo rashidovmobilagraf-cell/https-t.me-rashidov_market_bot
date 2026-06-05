@@ -585,7 +585,21 @@ export default function App() {
       }
     })
       .then(res => res.json())
-      .then(data => setProducts(Array.isArray(data) ? data : []))
+      .then(data => {
+        if (Array.isArray(data)) {
+          const mapped = data.map(p => {
+            let parsedName = p.name;
+            try {
+              const j = JSON.parse(p.name);
+              parsedName = j[lang] || j.uz || p.name;
+            } catch(e) {}
+            return { ...p, originalName: p.name, name: parsedName };
+          });
+          setProducts(mapped);
+        } else {
+          setProducts([]);
+        }
+      })
       .catch(err => { console.error("Error fetching products:", err); setProducts([]); });
 
     if (storeId) {
@@ -607,7 +621,7 @@ export default function App() {
         }
       });
     }
-  }, [storeId]);
+  }, [storeId, lang]);
 
   const toggleFav = (id) => {
     setFavs(prev => {
