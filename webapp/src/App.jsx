@@ -32,9 +32,12 @@ const Header = ({ title, subtitle, showBack = false, onBack, onProfile }) => {
       </div>
       <div className="header-center">
         {title === "RM" ? (
-          <div className="brand-logo">
-            <Store size={20} className="brand-icon" />
-            <span className="brand-text">YONMA YON <span className="brand-highlight">MARKET</span></span>
+          <div className="brand-logo-custom">
+            <div className="brand-y-icon">Y</div>
+            <div className="brand-text-col">
+               <span className="brand-text-main">YONMA YON</span>
+               <span className="brand-text-sub">M A R K E T</span>
+            </div>
           </div>
         ) : (
           <span className="header-title">{title}</span>
