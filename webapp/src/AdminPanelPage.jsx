@@ -354,7 +354,7 @@ const AdminPanelPage = ({ storeId }) => {
             <div style={{display: 'flex', gap: 12}}>
                 <div style={{flex: 1}}>
                     <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Narxi (so'm) *</div>
-                    <input className="input-field" type="number" placeholder="25000" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+                    <input className="input-field" type="text" inputMode="numeric" placeholder="25000" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
                 </div>
                 <div style={{flex: 1}}>
                     <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>O'lchov</div>
@@ -375,12 +375,12 @@ const AdminPanelPage = ({ storeId }) => {
             {newProduct.discountToggle && (
                 <>
                   <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#ef4444'}}>Chegirmadagi narxi (so'm)</div>
-                  <input className="input-field" type="number" placeholder="20000" value={newProduct.discountPrice} onChange={e => setNewProduct({...newProduct, discountPrice: e.target.value})} style={{borderColor: '#fca5a5'}} />
+                  <input className="input-field" type="text" inputMode="numeric" placeholder="20000" value={newProduct.discountPrice} onChange={e => setNewProduct({...newProduct, discountPrice: e.target.value})} style={{borderColor: '#fca5a5'}} />
                 </>
             )}
 
             <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Zaxirada mavjud (dona)</div>
-            <input className="input-field" type="number" placeholder="Masalan: 100. Bo'sh qolsa cheksiz" value={newProduct.stockQty} onChange={e => setNewProduct({...newProduct, stockQty: e.target.value})} />
+            <input className="input-field" type="text" inputMode="numeric" placeholder="Masalan: 100. Bo'sh qolsa cheksiz" value={newProduct.stockQty} onChange={e => setNewProduct({...newProduct, stockQty: e.target.value})} />
 
             <button className="btn-primary" onClick={handleSave} style={{marginTop: 8, boxShadow: '0 4px 12px rgba(13, 148, 114, 0.3)'}}>
               Saqlash
