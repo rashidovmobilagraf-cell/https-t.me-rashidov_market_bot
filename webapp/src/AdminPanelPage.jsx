@@ -43,13 +43,39 @@ const AdminPanelPage = ({ storeId }) => {
   }, [storeId]);
 
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-  const isAdmin = tgUser?.id?.toString() === "7899711439" || window.location.href.includes('localhost') || window.location.href.includes('vercel.app');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    if (!storeId) {
+      setLoadingAuth(false);
+      return;
+    }
+    fetch(`${SUPABASE_URL}/rest/v1/stores?id=eq.${storeId}&select=owner_id`, {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.length > 0) {
+        const ownerId = data[0].owner_id;
+        if (tgUser?.id?.toString() === ownerId || tgUser?.id?.toString() === "7899711439") {
+          setIsAdmin(true);
+        }
+      }
+      setLoadingAuth(false);
+    })
+    .catch(() => setLoadingAuth(false));
+  }, [storeId, tgUser?.id]);
+
+  if (loadingAuth) {
+    return <div style={{padding: 40, textAlign: 'center'}}>Tekshirilmoqda...</div>;
+  }
 
   if (!isAdmin) {
     return (
       <div style={{padding: 40, textAlign: 'center', fontFamily: 'system-ui', color: '#ef4444'}}>
         <h2>Xatolik!</h2>
-        <p>Boshqaruv paneliga kirish huquqi faqat admin uchun.</p>
+        <p>Boshqaruv paneliga kirish huquqi faqat do'kon egasi uchun.</p>
       </div>
     );
   }
