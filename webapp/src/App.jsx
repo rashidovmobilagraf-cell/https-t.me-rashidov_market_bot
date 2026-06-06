@@ -287,8 +287,64 @@ const HomePage = ({ products, banners, favs, toggleFav, onSelectProduct }) => {
 };
 
 const MenuPage = ({ products, onSelectProduct, favs, toggleFav }) => {
-  // Using the same layout for Menu to show items
-  return <HomePage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={onSelectProduct} />;
+  const [selectedCat, setSelectedCat] = useState(null);
+  const categories = Array.from(new Set(products.map(p => {
+    let c = p.category || "Boshqa";
+    if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
+    return c.replace('||OUT_OF_STOCK', '');
+  })));
+
+  if (selectedCat) {
+      const catProducts = products.filter(p => {
+          let c = p.category || "Boshqa";
+          if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
+          return c.replace('||OUT_OF_STOCK', '') === selectedCat;
+      });
+      return (
+          <div className="content">
+              <div style={{display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px 0'}}>
+                  <button onClick={() => setSelectedCat(null)} style={{background: 'none', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600}}>
+                      <ArrowLeft size={18} /> Orqaga
+                  </button>
+                  <div style={{fontWeight: 700, fontSize: 18}}>{selectedCat}</div>
+              </div>
+              <div className="section">
+                  <div className="grid">
+                      {catProducts.map(p => (
+                          <ProductCard key={p.id} p={p} favs={favs} toggleFav={toggleFav} onImageClick={onSelectProduct} />
+                      ))}
+                  </div>
+              </div>
+          </div>
+      );
+  }
+
+  return (
+      <div className="content">
+          <div className="section" style={{paddingTop: 16}}>
+              <div className="section-title">Kategoriyalar</div>
+              <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                  {categories.map(cat => {
+                      const count = products.filter(p => {
+                          let c = p.category || "Boshqa";
+                          if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
+                          return c.replace('||OUT_OF_STOCK', '') === cat;
+                      }).length;
+                      
+                      return (
+                          <div key={cat} onClick={() => setSelectedCat(cat)} style={{background: '#fff', padding: '16px 20px', borderRadius: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', cursor: 'pointer'}}>
+                              <div style={{fontWeight: 600, fontSize: 16, color: '#334155'}}>{cat}</div>
+                              <div style={{display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8'}}>
+                                  <span style={{fontSize: 13}}>{count} ta</span>
+                                  <ChevronRight size={18} />
+                              </div>
+                          </div>
+                      );
+                  })}
+              </div>
+          </div>
+      </div>
+  );
 };
 
 const FavoritesPage = ({ products, favs, toggleFav, onSelectProduct }) => {
