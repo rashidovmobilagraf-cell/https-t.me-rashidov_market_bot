@@ -75,15 +75,29 @@ export default async function handler(req, res) {
                   if (orderRes && orderRes.length > 0) {
                       const total = parseFloat(orderRes[0].total) || 0;
                       const cashback = Math.round(total * 0.05);
+                      let userReferredBy = null;
                       if (cashback > 0) {
-                          const userRes = await supabaseReq('GET', `customers?user_id=eq.${userId}&store_id=eq.${storeId}&select=balance,id`);
+                          const userRes = await supabaseReq('GET', `customers?user_id=eq.${userId}&store_id=eq.${storeId}&select=balance,id,referred_by`);
                           if (userRes && userRes.length > 0) {
+                              userReferredBy = userRes[0].referred_by;
                               const newBal = (parseFloat(userRes[0].balance) || 0) + cashback;
                               await supabaseReq('PATCH', `customers?id=eq.${userRes[0].id}`, { balance: newBal });
                           } else {
                               await supabaseReq('POST', `customers`, { user_id: userId, store_id: storeId, balance: cashback });
                           }
                           statusText += `\n\n🎁 Sizning hisobingizga ${cashback.toLocaleString()} so'm keshbek tushdi! Keyingi xaridda ishlating.`;
+                      }
+                      
+                      if (userReferredBy) {
+                          const refBonus = Math.round(total * 0.03);
+                          if (refBonus > 0) {
+                              const refRes = await supabaseReq('GET', `customers?user_id=eq.${userReferredBy}&store_id=eq.${storeId}&select=balance,id`);
+                              if (refRes && refRes.length > 0) {
+                                  const newRefBal = (parseFloat(refRes[0].balance) || 0) + refBonus;
+                                  await supabaseReq('PATCH', `customers?id=eq.${refRes[0].id}`, { balance: newRefBal });
+                                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: userReferredBy, text: `🎁 Taklif qilingan do'stingiz xarid qildi!\nSizga ${refBonus.toLocaleString()} so'm keshbek tushdi!` }) });
+                              }
+                          }
                       }
                   }
                 } catch(e) {}
@@ -153,6 +167,7 @@ export default async function handler(req, res) {
           total: data.total || data.total_price || 0,
           delivery_type: data.deliveryType || "delivery",
           payment_type: data.paymentType || "cash",
+          delivery_time: data.deliveryTime || "Tezkor",
           address: data.address || {},
           comment: data.comment || "",
           status: "Yangi",
@@ -193,7 +208,7 @@ export default async function handler(req, res) {
           }
         }
 
-        await sendMsg(chatId, `✅ <b>${STORE_NAME} - Buyurtma qabul qilindi!</b>\nBuyurtma raqami: #${orderId}\nTez orada siz bilan bog'lanamiz.`);
+        await sendMsg(chatId, `✅ <b>${STORE_NAME} - Buyurtma qabul qilindi!</b>\nBuyurtma raqami: #${orderId}\nYetkazish vaqti: ${data.deliveryTime || "Tezkor"}\nTez orada siz bilan bog'lanamiz.`);
 
         // Notify Admin
         const addr = data.address || {};
@@ -214,7 +229,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
 
-      if (text === '/start') {
+      if (text && text.startsWith('/start')) {
+        const parts = text.split(' ');
+        if (parts.length > 1 && parts[1].startsWith('ref_')) {
+            const referrerId = parts[1].replace('ref_', '');
+            try {
+                const userRes = await supabaseReq('GET', `customers?user_id=eq.${chatId.toString()}&store_id=eq.${botId}`);
+                if (!userRes || userRes.length === 0) {
+                    await supabaseReq('POST', `customers`, { user_id: chatId.toString(), store_id: botId, referred_by: referrerId });
+                }
+            } catch(e) {}
+        }
+        
         const markup = {
           inline_keyboard: [
             [{ text: "🇺🇿 O'zbekcha", callback_data: "lang_uz" }, { text: "🇷🇺 Русский", callback_data: "lang_ru" }]

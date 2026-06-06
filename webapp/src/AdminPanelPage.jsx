@@ -137,7 +137,7 @@ const AdminPanelPage = ({ storeId }) => {
 
   const openAdd = () => {
     setEditingId(null);
-    setNewProduct({ nameUz: '', nameRu: '', price: '', discountToggle: false, discountPrice: '', category: '', unit: 'dona', image: '', stockQty: '' });
+    setNewProduct({ nameUz: '', nameRu: '', price: '', discountToggle: false, discountPrice: '', category: '', unit: 'dona', image: '', stockQty: '', is_bestseller: false, variantsStr: '' });
     setShowAdd(true);
   };
 
@@ -160,12 +160,18 @@ const AdminPanelPage = ({ storeId }) => {
         cleanCat = parts[0]; unitStr = parts[1];
     }
     
+    let vStr = '';
+    if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+        vStr = p.variants.map(v => `${v.name}:${v.price}`).join(', ');
+    }
+
     setEditingId(p.id);
     setNewProduct({
         nameUz: nUz, nameRu: nRu, price: p.price,
         discountToggle: false, discountPrice: '', // For now, not parsing discount from price string, just keeping basic
         category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image_url || '',
-        is_bestseller: !!p.is_bestseller
+        is_bestseller: !!p.is_bestseller,
+        variantsStr: vStr
     });
     setShowAdd(true);
   };
@@ -183,7 +189,18 @@ const AdminPanelPage = ({ storeId }) => {
         priceData = `${newProduct.discountPrice} so'm (Chegirma)`; // Quick hack for simple display, ideally store real price
     }
 
-    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image, is_bestseller: !!newProduct.is_bestseller };
+    let variantsData = [];
+    if (newProduct.variantsStr) {
+        try {
+            variantsData = newProduct.variantsStr.split(',').map(s => {
+                const [n, p] = s.split(':');
+                if (n && p) return { name: n.trim(), price: parseInt(p.trim()) || 0 };
+                return null;
+            }).filter(Boolean);
+        } catch(e) {}
+    }
+
+    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image, is_bestseller: !!newProduct.is_bestseller, variants: variantsData };
     if (storeId) payload.store_id = storeId;
     
     try {
@@ -292,6 +309,7 @@ const AdminPanelPage = ({ storeId }) => {
               </div>
               <div style={{marginBottom: 8, fontSize: 14, color: '#334155'}}>
                 <b style={{color: '#000'}}>Tel:</b> {o.address?.phone || o.user_id}
+                {o.delivery_time && <><br/><b style={{color: '#000'}}>Vaqt:</b> <span style={{color: '#eab308', fontWeight: 600}}>{o.delivery_time}</span></>}
               </div>
               <div style={{marginBottom: 12, fontSize: 13, color: '#475569', background: '#f8fafc', padding: 12, borderRadius: 12}}>
                 {o.items?.map((i, idx) => {
@@ -396,6 +414,10 @@ const AdminPanelPage = ({ storeId }) => {
                 <span style={{fontWeight: 600, color: '#334155'}}>Bestseller (Tavsiya etamiz) ⭐️</span>
                 <input type="checkbox" checked={newProduct.is_bestseller} onChange={e => setNewProduct({...newProduct, is_bestseller: e.target.checked})} style={{width: 20, height: 20, accentColor: 'var(--primary)'}} />
             </div>
+
+            <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Variantlar (ixtiyoriy)</div>
+            <input className="input-field" placeholder="Masalan: S:20000, M:25000" value={newProduct.variantsStr} onChange={e => setNewProduct({...newProduct, variantsStr: e.target.value})} />
+            <div style={{fontSize: 12, color: '#64748b', marginTop: -8, marginBottom: 12}}>Vergul bilan ajrating. Format: Nomi:Narxi</div>
 
             <div style={{fontWeight: 600, fontSize: 14, marginBottom: 8, color: '#334155'}}>Zaxirada mavjud (dona)</div>
             <input className="input-field" type="text" inputMode="numeric" placeholder="Masalan: 100. Bo'sh qolsa cheksiz" value={newProduct.stockQty} onChange={e => setNewProduct({...newProduct, stockQty: e.target.value})} />

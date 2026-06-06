@@ -121,11 +121,10 @@ const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
   );
 };
 
-// --- Product Modal ---
 const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
+  const [variantIdx, setVariantIdx] = useState(0);
   if (!product) return null;
   const navigate = useNavigate();
-  const qty = cart[product.id]?.quantity || 0;
   const isFav = favs.has(product.id);
 
   let isOut = false;
@@ -140,17 +139,25 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
   }
   const maxQty = stockStr ? parseInt(stockStr, 10) : Infinity;
 
+  const variants = product.variants || [];
+  const hasVariants = variants.length > 0;
+  const currentVariant = hasVariants ? variants[variantIdx] : null;
+  const currentPrice = hasVariants ? currentVariant.price : parseInt(product.price?.toString().replace(/\D/g, '') || 0);
+  const cartKey = hasVariants ? `${product.id}_${variantIdx}` : product.id;
+  
+  const qty = cart[cartKey]?.quantity || 0;
+
   const handleAdd = () => {
     if (qty >= maxQty) return;
-    setCart(prev => ({ ...prev, [product.id]: { product, quantity: (prev[product.id]?.quantity || 0) + 1 } }));
+    setCart(prev => ({ ...prev, [cartKey]: { product, variant: currentVariant, quantity: (prev[cartKey]?.quantity || 0) + 1, cartKey, price: currentPrice } }));
   };
   const handleDecrease = () => setCart(prev => {
-    if (prev[product.id].quantity === 1) {
+    if (prev[cartKey].quantity === 1) {
       const newCart = { ...prev };
-      delete newCart[product.id];
+      delete newCart[cartKey];
       return newCart;
     }
-    return { ...prev, [product.id]: { ...prev[product.id], quantity: prev[product.id].quantity - 1 } };
+    return { ...prev, [cartKey]: { ...prev[cartKey], quantity: prev[cartKey].quantity - 1 } };
   });
 
   return (
@@ -172,13 +179,23 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
       <div className="m-info">
         <h2 className="m-title">{product.name}</h2>
         <div className="m-stock">{stockStr ? `Mavjud: ${stockStr} ta` : 'Mavjud'}</div>
-        <div className="m-price">{product.price} so'm</div>
+        <div className="m-price">{(currentPrice || 0).toLocaleString()} so'm</div>
         
-        <div className="m-section-title">Variantlar</div>
-        <div className="m-variant-pill">{product.name}</div>
+        {hasVariants && (
+            <>
+                <div className="m-section-title" style={{marginTop: 16}}>Variantlar</div>
+                <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
+                    {variants.map((v, i) => (
+                        <div key={i} onClick={() => setVariantIdx(i)} style={{padding: '8px 16px', borderRadius: 20, border: variantIdx === i ? '2px solid var(--primary)' : '1px solid #cbd5e1', background: variantIdx === i ? 'rgba(13, 148, 114, 0.05)' : '#fff', color: variantIdx === i ? 'var(--primary)' : '#475569', fontWeight: 600, fontSize: 14, cursor: 'pointer'}}>
+                            {v.name}
+                        </div>
+                    ))}
+                </div>
+            </>
+        )}
         
-        <div className="m-desc-title">Tavsif</div>
-        <div className="m-desc">Tavsif kiritilmagan.</div>
+        <div className="m-desc-title" style={{marginTop: 16}}>Tavsif</div>
+        <div className="m-desc">Kategoriya: {catName}</div>
       </div>
       
       <div className="bottom-bar">
@@ -277,18 +294,18 @@ const FavoritesPage = ({ products, favs, toggleFav, onSelectProduct }) => {
 const CartPage = ({ cart, setCart }) => {
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
-  const cartItems = Object.values(cart);
+  const cartItems = Object.entries(cart);
 
-  const increase = (id) => setCart(prev => ({ ...prev, [id]: { ...prev[id], quantity: prev[id].quantity + 1 } }));
-  const decrease = (id) => setCart(prev => {
-    if (prev[id].quantity === 1) {
+  const increase = (cartKey) => setCart(prev => ({ ...prev, [cartKey]: { ...prev[cartKey], quantity: prev[cartKey].quantity + 1 } }));
+  const decrease = (cartKey) => setCart(prev => {
+    if (prev[cartKey].quantity === 1) {
       const newCart = { ...prev };
-      delete newCart[id];
+      delete newCart[cartKey];
       return newCart;
     }
-    return { ...prev, [id]: { ...prev[id], quantity: prev[id].quantity - 1 } };
+    return { ...prev, [cartKey]: { ...prev[cartKey], quantity: prev[cartKey].quantity - 1 } };
   });
-  const remove = (id) => setCart(prev => { const newCart = { ...prev }; delete newCart[id]; return newCart; });
+  const remove = (cartKey) => setCart(prev => { const newCart = { ...prev }; delete newCart[cartKey]; return newCart; });
 
   return (
     <div className="content" style={{paddingTop: 8, paddingBottom: 100}}>
@@ -300,23 +317,23 @@ const CartPage = ({ cart, setCart }) => {
         </div>
       ) : (
         <div className="cart-list">
-          {cartItems.map((item, idx) => (
-            <div key={idx} className="c-item">
+          {cartItems.map(([cartKey, item]) => (
+            <div key={cartKey} className="c-item">
               <div className="c-item-row">
                 <img src={item.product.image_url || `https://picsum.photos/seed/${item.product.name}/100`} alt={item.product.name} className="c-img" />
                 <div className="c-info">
                   <div className="c-title">{item.product.name}</div>
-                  <div className="c-variant">Variant: {item.product.name}</div>
-                  <div className="c-price">{item.product.price} so'm</div>
+                  {item.variant ? <div className="c-variant">Variant: {item.variant.name}</div> : null}
+                  <div className="c-price">{(item.price || 0).toLocaleString()} so'm</div>
                 </div>
               </div>
               <div className="c-actions">
                 <div className="qty-stepper" style={{width: 100, height: 36}}>
-                  <button className="qty-btn" onClick={() => decrease(item.product.id)}><Minus size={16}/></button>
+                  <button className="qty-btn" onClick={() => decrease(cartKey)}><Minus size={16}/></button>
                   <span className="qty-val" style={{fontSize: 14}}>{item.quantity}</span>
-                  <button className="qty-btn" onClick={() => increase(item.product.id)}><Plus size={16}/></button>
+                  <button className="qty-btn" onClick={() => increase(cartKey)}><Plus size={16}/></button>
                 </div>
-                <button className="icon-btn" onClick={() => remove(item.product.id)} style={{color: '#9ca3af'}}><Trash2 size={20} /></button>
+                <button className="icon-btn" onClick={() => remove(cartKey)} style={{color: '#9ca3af'}}><Trash2 size={20} /></button>
               </div>
             </div>
           ))}
@@ -340,6 +357,7 @@ const ArrowRight = ({ size, style }) => <ChevronRight size={size} style={style} 
 
 const CheckoutPage = ({ cart, setCart, storeInfo }) => {
   const [deliveryType, setDeliveryType] = useState('delivery');
+  const [deliveryTime, setDeliveryTime] = useState('Tezkor');
   const [paymentType, setPaymentType] = useState('cash');
   const [address, setAddress] = useState({ house: "", apt: "", code: "", phone: "+998", lat: null, lon: null });
   const [cashbackBalance, setCashbackBalance] = useState(0);
@@ -361,7 +379,7 @@ const CheckoutPage = ({ cart, setCart, storeInfo }) => {
   }, [tgUser?.id, storeInfo?.id]);
 
   const cartItems = Object.values(cart);
-  const itemsTotal = cartItems.reduce((sum, item) => sum + (item.quantity * parseFloat(item.product.price)), 0);
+  const itemsTotal = cartItems.reduce((sum, item) => sum + (item.quantity * (item.price || parseFloat(item.product.price))), 0);
 
   const applyPromo = async () => {
       if(!promoCode || !storeInfo?.id) return;
@@ -415,9 +433,10 @@ const CheckoutPage = ({ cart, setCart, storeInfo }) => {
     }
     window.Telegram.WebApp.sendData(JSON.stringify({
         action: 'checkout',
-        items: cartItems.map(i => ({id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity})),
+        items: cartItems.map(i => ({id: i.product.id, name: i.variant ? `${i.product.name} (${i.variant.name})` : i.product.name, price: i.price || i.product.price, quantity: i.quantity})),
         total: finalTotal,
         deliveryType: deliveryType,
+        deliveryTime: deliveryTime,
         paymentType: paymentType,
         address: address,
         comment: comment,
@@ -466,6 +485,14 @@ const CheckoutPage = ({ cart, setCart, storeInfo }) => {
               <input type="text" className="input-field" placeholder="Kvartira" value={address.apt} onChange={e => setAddress({...address, apt: e.target.value})} />
             </div>
             <input type="text" className="input-field" placeholder="Eshik kodi / domofon" value={address.code} onChange={e => setAddress({...address, code: e.target.value})} />
+            
+            <div className="checkout-title" style={{marginTop: 16, fontSize: 13, color: 'var(--text-muted)'}}>Yetkazib berish vaqti</div>
+            <select className="input-field" value={deliveryTime} onChange={e => setDeliveryTime(e.target.value)}>
+                <option value="Tezkor">Tezkor (Hozir)</option>
+                <option value="1 soatdan keyin">1 soatdan keyin</option>
+                <option value="2 soatdan keyin">2 soatdan keyin</option>
+                <option value="Bugun kechqurun">Bugun kechqurun</option>
+            </select>
           </>
         ) : (
           <div style={{color: 'var(--text-muted)', fontSize: 14, margin: '16px 0'}}>
@@ -562,15 +589,60 @@ const ProfileInfoPage = () => (
   </div>
 );
 
-const ProfileOrdersPage = () => (
-  <div className="content">
-    <div className="empty">
-      <Package size={64} className="empty-icon" />
-      <div className="empty-title">Buyurtmalar yo'q</div>
-      <div className="empty-sub">Hali hech narsa xarid qilmadingiz</div>
+const ProfileOrdersPage = ({ storeInfo }) => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+  useEffect(() => {
+    if (tgUser?.id && storeInfo?.id) {
+       fetch(`https://sbphcaletzugfqdvglmj.supabase.co/rest/v1/orders?user_id=eq.${tgUser.id}&store_id=eq.${storeInfo.id}&order=date.desc`, {
+           headers: { "apikey": "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR", "Authorization": "Bearer sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR" }
+       }).then(r=>r.json()).then(d => { setOrders(d || []); setLoading(false); }).catch(() => setLoading(false));
+    } else {
+       setLoading(false);
+    }
+  }, [tgUser?.id, storeInfo?.id]);
+
+  if (loading) return <div className="content" style={{padding: 32, textAlign: 'center', color: '#64748b'}}>Yuklanmoqda...</div>;
+
+  return (
+    <div className="content" style={{paddingTop: 8, paddingBottom: 100}}>
+      {orders.length === 0 ? (
+        <div className="empty">
+          <Package size={64} className="empty-icon" />
+          <div className="empty-title">Buyurtmalar yo'q</div>
+          <div className="empty-sub">Hali hech narsa xarid qilmadingiz</div>
+        </div>
+      ) : (
+        <div style={{display: 'flex', flexDirection: 'column', gap: 12, padding: '0 16px'}}>
+           {orders.map(o => (
+               <div key={o.order_id} style={{background: '#fff', padding: 16, borderRadius: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)'}}>
+                   <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 12}}>
+                       <span style={{fontWeight: 700, fontSize: 16}}>#{o.order_id}</span>
+                       <span style={{color: '#94a3b8', fontSize: 12}}>{new Date(o.date).toLocaleString('uz-UZ')}</span>
+                   </div>
+                   
+                   <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8}}>
+                       <div style={{flex: 1, height: 6, background: o.status === 'Bekor qilingan' ? '#fee2e2' : 'var(--primary)', borderRadius: 3}}></div>
+                       <div style={{flex: 1, height: 6, background: o.status === 'Yetkazilmoqda' || o.status === 'Bajarildi' ? 'var(--primary)' : '#e2e8f0', borderRadius: 3, margin: '0 4px'}}></div>
+                       <div style={{flex: 1, height: 6, background: o.status === 'Bajarildi' ? 'var(--primary)' : '#e2e8f0', borderRadius: 3}}></div>
+                   </div>
+                   <div style={{textAlign: 'center', fontSize: 13, fontWeight: 600, color: o.status === 'Bekor qilingan' ? '#ef4444' : 'var(--primary)', marginBottom: 12}}>Holati: {o.status}</div>
+
+                   <div style={{marginBottom: 12, fontSize: 13, color: '#475569', background: '#f8fafc', padding: 12, borderRadius: 12}}>
+                     {o.items?.map((i, idx) => (
+                         <div key={idx} style={{marginBottom: 4}}>• {i.name} <b style={{color:'#000'}}>x{i.quantity}</b></div>
+                     ))}
+                   </div>
+                   <div style={{fontWeight: 700, color: 'var(--primary)', fontSize: 16, textAlign: 'right'}}>{(o.total || 0).toLocaleString()} so'm</div>
+               </div>
+           ))}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const ProfileSupportPage = () => {
   const [msg, setMsg] = useState("");
@@ -592,8 +664,10 @@ const ProfileSupportPage = () => {
   );
 };
 
-const ProfilePage = ({ lang, setLang, t }) => {
+const ProfilePage = ({ lang, setLang, t, storeInfo }) => {
   const navigate = useNavigate();
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  
   return (
     <div className="content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 65px)', background: '#f5f5f5', paddingBottom: 0 }}>
       <div className="profile-menu" style={{marginTop: 0, borderBottom: '1px solid var(--border)', borderRadius: 0, boxShadow: 'none'}}>
@@ -614,7 +688,22 @@ const ProfilePage = ({ lang, setLang, t }) => {
         </div>
       </div>
       
-      <div style={{padding: '24px 16px 8px', fontSize: 13, fontWeight: 700, color: '#000'}}>{t('lang', lang)}</div>
+      <div style={{margin: '16px 16px', background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)'}}>
+         <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8}}>
+            <Share2 size={20} color="var(--primary)" />
+            <span style={{fontWeight: 700, fontSize: 15}}>Referal tizimi (Bonuslar)</span>
+         </div>
+         <p style={{fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.4}}>Do'stlaringizni taklif qiling va ularning har bir xarididan <b style={{color: 'var(--primary)'}}>3% keshbek</b> oling!</p>
+         <div style={{background: '#f1f5f9', padding: '10px 12px', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+             <span style={{fontSize: 13, fontWeight: 600, color: '#334155'}}>{tgUser?.id ? `...bot?start=ref_${tgUser.id}` : "Noma'lum"}</span>
+             <button style={{background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, fontSize: 13}} onClick={() => {
+                 if(tgUser?.id) navigator.clipboard.writeText(`ref_${tgUser.id}`);
+                 showAlert("Nusxa olindi!");
+             }}>Nusxa olish</button>
+         </div>
+      </div>
+      
+      <div style={{padding: '8px 16px', fontSize: 13, fontWeight: 700, color: '#000'}}>{t('lang', lang)}</div>
       <div style={{padding: '0 16px', display: 'flex', gap: 12}}>
         <div 
           onClick={() => setLang('uz')} 
@@ -777,9 +866,9 @@ export default function App() {
         <Route path="/favorites" element={<FavoritesPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
         <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} storeInfo={storeInfo} />} />
-        <Route path="/profile" element={<ProfilePage lang={lang} setLang={setLang} t={t} />} />
+        <Route path="/profile" element={<ProfilePage lang={lang} setLang={setLang} t={t} storeInfo={storeInfo} />} />
         <Route path="/profile/info" element={<ProfileInfoPage />} />
-        <Route path="/profile/orders" element={<ProfileOrdersPage />} />
+        <Route path="/profile/orders" element={<ProfileOrdersPage storeInfo={storeInfo} />} />
         <Route path="/profile/support" element={<ProfileSupportPage />} />
       </Routes>
 
