@@ -183,8 +183,17 @@ export default async function handler(req, res) {
                 const newBal = Math.max(0, parseFloat(userRes[0].balance) - data.cashbackUsed);
                 await supabaseReq('PATCH', `customers?id=eq.${userRes[0].id}`, { balance: newBal });
              }
-           } catch(e) {}
-        }
+         } catch(e) {}
+         
+         // Add to total_spent
+         try {
+           const userRes2 = await supabaseReq('GET', `customers?user_id=eq.${msg.from.id}&store_id=eq.${botId}&select=total_spent,id`);
+           if (userRes2 && userRes2.length > 0) {
+              const currentSpent = parseFloat(userRes2[0].total_spent) || 0;
+              const newSpent = currentSpent + (data.total || data.total_price || 0);
+              await supabaseReq('PATCH', `customers?id=eq.${userRes2[0].id}`, { total_spent: newSpent });
+           }
+         } catch(e) {}
 
         // Mantiq: Sotib olingan mahsulotlar sonini ayirish
         if (data.items && data.items.length > 0) {

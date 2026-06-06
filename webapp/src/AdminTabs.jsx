@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, Send, Save, MapPin } from 'lucide-react';
+import { Trash2, Send, Save, MapPin, ImagePlus } from 'lucide-react';
 
 const SUPABASE_URL = "https://sbphcaletzugfqdvglmj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_IAuMWgn3q4VLD-bD3OwbDw_3Y4yTKpR";
@@ -111,24 +111,33 @@ export const PromoTab = ({ storeId }) => {
 
 export const BroadcastTab = ({ storeId }) => {
     const [text, setText] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => setImageUrl(event.target.result);
+        reader.readAsDataURL(file);
+    };
+
     const sendBroadcast = async () => {
-        if (!text.trim()) return showAlert("Xabar yozing");
+        if (!text.trim() && !imageUrl) return showAlert("Xabar yozing yoki rasm yuklang");
         if (!window.confirm("Barcha mijozlarga xabar yuborilsinmi?")) return;
         setLoading(true);
         try {
-            const res = await fetch('https://webapp-kohl-kappa.vercel.app/api/webhook', {
+            const res = await fetch('https://webapp-kohl-kappa.vercel.app/api/broadcast', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'broadcast', storeId, text })
+                body: JSON.stringify({ store_id: storeId, text, image_url: imageUrl, admin_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id })
             });
             const data = await res.json();
             if (res.ok && data.ok) {
-                showAlert(`Xabar ${data.count} ta mijozga yuborildi!`);
-                setText('');
+                showAlert(`Xabar ${data.sent} ta mijozga yuborildi!`);
+                setText(''); setImageUrl('');
             } else {
-                showAlert("Xatolik yuz berdi");
+                showAlert("Xatolik yuz berdi: " + (data.error || ""));
             }
         } catch(e) {
             showAlert("Xatolik yuz berdi");
@@ -140,6 +149,11 @@ export const BroadcastTab = ({ storeId }) => {
         <div style={{padding: 16}}>
             <h3 style={{marginBottom: 16, color: '#334155'}}>📣 Ommaviy xabar yuborish</h3>
             <div style={{background: '#fff', padding: 16, borderRadius: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)'}}>
+                {imageUrl && <img src={imageUrl} alt="preview" style={{width: '100%', borderRadius: 12, marginBottom: 12, maxHeight: 200, objectFit: 'cover'}} />}
+                <label style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, background: '#f1f5f9', borderRadius: 12, marginBottom: 12, cursor: 'pointer', color: '#64748b'}}>
+                    <ImagePlus size={18} /> Rasm qo'shish
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{display: 'none'}} />
+                </label>
                 <textarea 
                     className="input-field" 
                     placeholder="Xabar matni..." 
@@ -225,6 +239,85 @@ export const SettingsTab = ({ storeId }) => {
                 <button className="btn-primary" onClick={saveSettings} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8}}>
                     <Save size={18} /> Saqlash
                 </button>
+            </div>
+        </div>
+    );
+};
+
+export const BannersTab = ({ storeId }) => {
+    const [banners, setBanners] = useState([]);
+    const [newImage, setNewImage] = useState('');
+    const [newLink, setNewLink] = useState('');
+
+    const loadBanners = async () => {
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/banners?store_id=eq.${storeId}`, {
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+            });
+            const data = await res.json();
+            setBanners(Array.isArray(data) ? data : []);
+        } catch(e) {}
+    };
+
+    useEffect(() => { if (storeId) loadBanners(); }, [storeId]);
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => setNewImage(event.target.result);
+        reader.readAsDataURL(file);
+    };
+
+    const addBanner = async () => {
+        if (!newImage) return showAlert("Rasm yuklang");
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/banners`, {
+                method: 'POST',
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", "Prefer": "return=representation" },
+                body: JSON.stringify({ store_id: storeId, image_url: newImage, link_url: newLink || '' })
+            });
+            if (res.ok) {
+                showAlert("Qo'shildi!");
+                setNewImage(''); setNewLink('');
+                loadBanners();
+            } else showAlert("Xatolik!");
+        } catch(e) {}
+    };
+
+    const deleteBanner = async (id) => {
+        if (!window.confirm("O'chirasizmi?")) return;
+        try {
+            await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+            });
+            loadBanners();
+        } catch(e) {}
+    };
+
+    return (
+        <div style={{padding: 16}}>
+            <h3 style={{marginBottom: 16, color: '#334155'}}>🌟 Bannerlar (Stories)</h3>
+            <div style={{background: '#fff', padding: 16, borderRadius: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: 16}}>
+                {newImage && <img src={newImage} alt="preview" style={{width: '100%', borderRadius: 12, marginBottom: 12, maxHeight: 150, objectFit: 'cover'}} />}
+                <label style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, background: '#f1f5f9', borderRadius: 12, marginBottom: 12, cursor: 'pointer', color: '#64748b'}}>
+                    <ImagePlus size={18} /> Rasm qo'shish
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{display: 'none'}} />
+                </label>
+                <input className="input-field" placeholder="Ssilka (bosganda qayerga o'tadi? Ixtiyoriy)" value={newLink} onChange={e=>setNewLink(e.target.value)} />
+                <button className="btn-primary" onClick={addBanner}>Yuklash</button>
+            </div>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+                {banners.map(b => (
+                    <div key={b.id} style={{background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', position: 'relative'}}>
+                        <img src={b.image_url} alt="banner" style={{width: '100%', height: 100, objectFit: 'cover'}} />
+                        <button onClick={() => deleteBanner(b.id)} style={{position: 'absolute', top: 4, right: 4, background: 'rgba(255,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', padding: 6, cursor: 'pointer'}}>
+                            <Trash2 size={14}/>
+                        </button>
+                    </div>
+                ))}
             </div>
         </div>
     );

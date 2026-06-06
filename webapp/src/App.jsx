@@ -121,7 +121,7 @@ const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
   );
 };
 
-const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
+const ProductModal = ({ product, allProducts, onSelectProduct, onClose, cart, setCart, favs, toggleFav }) => {
   const [variantIdx, setVariantIdx] = useState(0);
   if (!product) return null;
   const navigate = useNavigate();
@@ -196,6 +196,19 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
         
         <div className="m-desc-title" style={{marginTop: 16}}>Tavsif</div>
         <div className="m-desc">Kategoriya: {catName}</div>
+        
+        {allProducts && allProducts.length > 0 && (
+            <div style={{marginTop: 24, paddingBottom: 16}}>
+                <div style={{fontWeight: 700, fontSize: 16, marginBottom: 12, color: '#334155'}}>O'xshash tovarlar</div>
+                <div style={{display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+                    {allProducts.filter(p => p.id !== product.id && (p.category === product.category || Math.random() > 0.5)).slice(0, 5).map(p => (
+                        <div key={p.id} style={{minWidth: 120, width: 120}}>
+                            <ProductCard p={p} favs={favs} toggleFav={toggleFav} onImageClick={onSelectProduct} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
       </div>
       
       <div className="bottom-bar">
@@ -220,7 +233,7 @@ const ProductModal = ({ product, onClose, cart, setCart, favs, toggleFav }) => {
 
 // --- Pages ---
 
-const HomePage = ({ products, favs, toggleFav, onSelectProduct }) => {
+const HomePage = ({ products, banners, favs, toggleFav, onSelectProduct }) => {
   const categories = Array.from(new Set(products.map(p => {
     let c = p.category || "Boshqa";
     if (c.includes('||QTY:')) c = c.split('||QTY:')[0];
@@ -231,6 +244,15 @@ const HomePage = ({ products, favs, toggleFav, onSelectProduct }) => {
 
   return (
     <div className="content">
+      {banners && banners.length > 0 && (
+          <div style={{display: 'flex', overflowX: 'auto', gap: 12, padding: '16px 16px 0', scrollbarWidth: 'none'}}>
+              {banners.map(b => (
+                  <div key={b.id} style={{minWidth: 280, width: 280, height: 140, borderRadius: 16, overflow: 'hidden', position: 'relative', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}} onClick={() => b.link_url && (window.location.href = b.link_url)}>
+                      <img src={b.image_url} alt="banner" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                  </div>
+              ))}
+          </div>
+      )}
       {bestsellers.length > 0 && (
         <div className="section" style={{marginBottom: 8}}>
             <div className="section-title">⭐️ Tavsiya etamiz</div>
@@ -355,7 +377,7 @@ const CartPage = ({ cart, setCart }) => {
 
 const ArrowRight = ({ size, style }) => <ChevronRight size={size} style={style} />;
 
-const CheckoutPage = ({ cart, setCart, storeInfo }) => {
+const CheckoutPage = ({ cart, setCart, storeInfo, customer }) => {
   const [deliveryType, setDeliveryType] = useState('delivery');
   const [deliveryTime, setDeliveryTime] = useState('Tezkor');
   const [paymentType, setPaymentType] = useState('cash');
@@ -418,7 +440,10 @@ const CheckoutPage = ({ cart, setCart, storeInfo }) => {
       }
   }
 
-  let finalTotal = itemsTotal + deliveryFee - promoDiscount;
+  const vipDiscountPercent = customer ? (parseFloat(customer.total_spent || 0) >= 5000000 ? 5 : (parseFloat(customer.total_spent || 0) >= 1000000 ? 2 : 0)) : 0;
+  const vipDiscountAmount = Math.round(itemsTotal * vipDiscountPercent / 100);
+
+  let finalTotal = itemsTotal + deliveryFee - promoDiscount - vipDiscountAmount;
   let cashbackUsed = 0;
   if (useCashback && cashbackBalance > 0) {
       cashbackUsed = Math.min(cashbackBalance, finalTotal);
@@ -555,6 +580,12 @@ const CheckoutPage = ({ cart, setCart, storeInfo }) => {
                 <span>-{promoDiscount.toLocaleString()} so'm</span>
               </div>
           )}
+          {vipDiscountAmount > 0 && (
+              <div className="summary-row" style={{color: '#eab308'}}>
+                <span>VIP Status ({vipDiscountPercent}%):</span>
+                <span>-{vipDiscountAmount.toLocaleString()} so'm</span>
+              </div>
+          )}
           {useCashback && cashbackUsed > 0 && (
               <div className="summary-row" style={{color: 'var(--primary)'}}>
                 <span>Keshbekdan:</span>
@@ -664,9 +695,32 @@ const ProfileSupportPage = () => {
   );
 };
 
-const ProfilePage = ({ lang, setLang, t, storeInfo }) => {
+const ProfilePage = ({ lang, setLang, t, storeInfo, customer }) => {
   const navigate = useNavigate();
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  const storeId = storeInfo?.id;
+  const totalSpent = parseFloat(customer?.total_spent || 0);
+  let vipLevel = 'Bronza', vipDiscount = 0, vipColor = '#cd7f32';
+  if (totalSpent >= 5000000) { vipLevel = 'Oltin'; vipDiscount = 5; vipColor = '#eab308'; }
+  else if (totalSpent >= 1000000) { vipLevel = 'Kumush'; vipDiscount = 2; vipColor = '#94a3b8'; }
+
+  const handleSpin = async () => {
+      try {
+          const res = await fetch('https://webapp-kohl-kappa.vercel.app/api/spin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ store_id: storeId, user_id: tgUser?.id, reward_amount: 5000 })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+              showAlert(`Tabriklaymiz! Siz 5000 so'm keshbek yutib oldingiz! Yangi balansingiz: ${data.new_balance} so'm`);
+          } else {
+              showAlert(data.error || "Siz bugun o'ynagansiz! Ertaga keling.");
+          }
+      } catch(e) {
+          showAlert("Xatolik yuz berdi");
+      }
+  };
   
   return (
     <div className="content" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 65px)', background: '#f5f5f5', paddingBottom: 0 }}>
@@ -703,6 +757,23 @@ const ProfilePage = ({ lang, setLang, t, storeInfo }) => {
          </div>
       </div>
       
+      {/* VIP Status */}
+      <div style={{margin: '16px 16px 0', background: `linear-gradient(135deg, ${vipColor}aa, ${vipColor})`, borderRadius: 16, padding: 16, color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', position: 'relative', overflow: 'hidden'}}>
+         <div style={{fontWeight: 800, fontSize: 20, marginBottom: 4}}>{vipLevel} Status</div>
+         <div style={{fontSize: 14, opacity: 0.9}}>Sizning doimiy chegirmangiz: {vipDiscount}%</div>
+         <div style={{marginTop: 12, fontSize: 12, opacity: 0.8}}>Umumiy xaridlar: {totalSpent.toLocaleString()} so'm</div>
+         <div style={{position: 'absolute', right: -20, top: -20, opacity: 0.2}}><ShoppingCart size={100} /></div>
+      </div>
+      
+      {/* Wheel of Fortune Button */}
+      <div style={{margin: '16px 16px', background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+         <div>
+            <div style={{fontWeight: 700, fontSize: 15, marginBottom: 4}}>🎡 Omad G'ildiragi</div>
+            <div style={{fontSize: 12, color: '#64748b'}}>Har kuni bepul aylantiring</div>
+         </div>
+         <button onClick={handleSpin} style={{background: 'var(--primary)', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 12, fontWeight: 700}}>Aylantirish</button>
+      </div>
+
       <div style={{padding: '8px 16px', fontSize: 13, fontWeight: 700, color: '#000'}}>{t('lang', lang)}</div>
       <div style={{padding: '0 16px', display: 'flex', gap: 12}}>
         <div 
@@ -750,6 +821,8 @@ export default function App() {
   const [cart, setCart] = useState({});
   const [favs, setFavs] = useState(new Set());
   const [products, setProducts] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [customer, setCustomer] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -808,12 +881,28 @@ export default function App() {
         if (data && data.length > 0) {
            const store = data[0];
            setStoreInfo(store);
-           // Apply dynamic theme color
-           if (store.theme_color) {
-             document.documentElement.style.setProperty('--primary', store.theme_color);
-           }
+           if (store.theme_color) document.documentElement.style.setProperty('--primary', store.theme_color);
         }
       });
+
+      // Fetch banners
+      fetch(`${SUPABASE_URL}/rest/v1/banners?store_id=eq.${storeId}&select=*`, {
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+      })
+      .then(res => res.json())
+      .then(data => setBanners(Array.isArray(data) ? data : []));
+
+      // Fetch customer
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (tgUser?.id) {
+          fetch(`${SUPABASE_URL}/rest/v1/customers?store_id=eq.${storeId}&user_id=eq.${tgUser.id}`, {
+            headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+          })
+          .then(res => res.json())
+          .then(data => {
+             if (data && data.length > 0) setCustomer(data[0]);
+          });
+      }
     }
   }, [storeId, lang]);
 
@@ -861,18 +950,18 @@ export default function App() {
       
       <Routes>
         <Route path="/admin-panel" element={<AdminPanelPage storeId={storeId} />} />
-        <Route path="/" element={<HomePage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
+        <Route path="/" element={<HomePage products={products} banners={banners} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/menu" element={<MenuPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/favorites" element={<FavoritesPage products={products} favs={favs} toggleFav={toggleFav} onSelectProduct={setSelectedProduct} />} />
         <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
-        <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} storeInfo={storeInfo} />} />
-        <Route path="/profile" element={<ProfilePage lang={lang} setLang={setLang} t={t} storeInfo={storeInfo} />} />
+        <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} storeInfo={storeInfo} customer={customer} />} />
+        <Route path="/profile" element={<ProfilePage lang={lang} setLang={setLang} t={t} storeInfo={storeInfo} customer={customer} />} />
         <Route path="/profile/info" element={<ProfileInfoPage />} />
         <Route path="/profile/orders" element={<ProfileOrdersPage storeInfo={storeInfo} />} />
         <Route path="/profile/support" element={<ProfileSupportPage />} />
       </Routes>
 
-      <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} cart={cart} setCart={setCart} favs={favs} toggleFav={toggleFav} />
+      <ProductModal product={selectedProduct} allProducts={products} onSelectProduct={setSelectedProduct} onClose={() => setSelectedProduct(null)} cart={cart} setCart={setCart} favs={favs} toggleFav={toggleFav} />
       
       {showBottomNav && <BottomNav cartCount={Object.values(cart).reduce((s, i) => s + i.quantity, 0)} favCount={favs.size} t={t} lang={lang} />}
     </div>

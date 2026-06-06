@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Copy, Search, X, Camera, Package, ImagePlus } from 'lucide-react';
-import { AnalyticsTab, PromoTab, BroadcastTab, SettingsTab } from './AdminTabs';
+import { AnalyticsTab, PromoTab, BroadcastTab, SettingsTab, BannersTab } from './AdminTabs';
 const showAlert = (msg) => {
   if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
     window.Telegram.WebApp.showAlert(msg);
@@ -241,12 +241,14 @@ const AdminPanelPage = ({ storeId }) => {
         <button className={`admin-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>📊 Analitika</button>
         <button className={`admin-tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>📦 Mahsulotlar</button>
         <button className={`admin-tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>📝 Buyurtmalar</button>
+        <button className={`admin-tab-btn ${activeTab === 'banners' ? 'active' : ''}`} onClick={() => setActiveTab('banners')}>🌟 Bannerlar</button>
         <button className={`admin-tab-btn ${activeTab === 'promo' ? 'active' : ''}`} onClick={() => setActiveTab('promo')}>🎟 Promokod</button>
         <button className={`admin-tab-btn ${activeTab === 'broadcast' ? 'active' : ''}`} onClick={() => setActiveTab('broadcast')}>📣 Rassilka</button>
         <button className={`admin-tab-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>⚙️ Sozlamalar</button>
       </div>
 
       {activeTab === 'analytics' && <AnalyticsTab orders={orders} />}
+      {activeTab === 'banners' && <BannersTab storeId={storeId} />}
       {activeTab === 'promo' && <PromoTab storeId={storeId} />}
       {activeTab === 'broadcast' && <BroadcastTab storeId={storeId} />}
       {activeTab === 'settings' && <SettingsTab storeId={storeId} />}
