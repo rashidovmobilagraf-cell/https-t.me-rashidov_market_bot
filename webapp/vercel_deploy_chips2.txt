@@ -1,0 +1,59 @@
+Retrieving project…
+Deploying feruz-s-projects/webapp
+Uploading [--------------------] (0.0B/21.5KB)
+Uploading [==============------] (16.0KB/21.5KB)
+Uploading [================----] (18.1KB/21.5KB)
+Uploading [====================] (21.5KB/21.5KB)
+  Inspect     https://vercel.com/feruz-s-projects/webapp/2AmMmDtUHjbZbP4nLLqp9HX5Z8Rk
+▲ Production  https://webapp-5pbwls7u0-feruz-s-projects.vercel.app
+Building…
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Downloading 64 deployment files...
+Restored build cache from previous deployment (FBTfAwvwSt8NgpAkAtYbSoq86hGC)
+Running "vercel build"
+Vercel CLI 54.9.0
+Installing dependencies...
+up to date in 605ms
+32 packages are looking for funding
+run `npm fund` for details
+Running "npm run build"
+> webapp@0.0.0 build
+> vite build
+vite v8.0.14 building client environment for production...
+transforming...✓ 1747 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.53 kB │ gzip:  0.33 kB
+dist/assets/index-Ba2zQpyv.css   12.92 kB │ gzip:  3.12 kB
+dist/assets/index-DTC1GH8B.js   273.24 kB │ gzip: 85.53 kB
+✓ built in 781ms
+Build Completed in /vercel/output [2s]
+Deploying outputs...
+[2K[1A[2K[G▲ Production  https://webapp-5pbwls7u0-feruz-s-projects.vercel.app
+Completing…
+▲ Aliased     https://webapp-kohl-kappa.vercel.app
+{
+  "status": "ok",
+  "deployment": {
+    "id": "dpl_2AmMmDtUHjbZbP4nLLqp9HX5Z8Rk",
+    "url": "https://webapp-5pbwls7u0-feruz-s-projects.vercel.app",
+    "inspectorUrl": "https://vercel.com/feruz-s-projects/webapp/2AmMmDtUHjbZbP4nLLqp9HX5Z8Rk",
+    "readyState": "READY",
+    "target": "production",
+    "deploymentApiUrl": "https://api.vercel.com/v13/deployments/dpl_2AmMmDtUHjbZbP4nLLqp9HX5Z8Rk"
+  },
+  "message": "Deployment webapp-5pbwls7u0-feruz-s-projects.vercel.app ready.",
+  "next": [
+    {
+      "command": "vercel inspect webapp-5pbwls7u0-feruz-s-projects.vercel.app",
+      "when": "Inspect deployment"
+    },
+    {
+      "command": "vercel deploy --prod",
+      "when": "Promote to production"
+    }
+  ]
+}

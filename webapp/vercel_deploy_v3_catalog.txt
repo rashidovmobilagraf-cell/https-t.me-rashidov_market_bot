@@ -1,0 +1,60 @@
+Retrieving project…
+Deploying feruz-s-projects/webapp
+Uploading [--------------------] (0.0B/438.2KB)
+Uploading [=====---------------] (111.6KB/438.2KB)
+Uploading [==========----------] (224.0KB/438.2KB)
+Uploading [===============-----] (336.0KB/438.2KB)
+Uploading [====================] (438.2KB/438.2KB)
+  Inspect     https://vercel.com/feruz-s-projects/webapp/BAZac18Q1s1pNv1X3mHpR9ryqauN
+▲ Production  https://webapp-1z10gh7aa-feruz-s-projects.vercel.app
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Downloading 79 deployment files...
+Restored build cache from previous deployment (CHijZXxZhTAry1oQp1ycN1Xfe8oa)
+Running "vercel build"
+Vercel CLI 54.9.0
+Installing dependencies...
+up to date in 818ms
+32 packages are looking for funding
+run `npm fund` for details
+Running "npm run build"
+> webapp@0.0.0 build
+> vite build
+vite v8.0.14 building client environment for production...
+transforming...✓ 1748 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.53 kB │ gzip:  0.33 kB
+dist/assets/index-Ba2zQpyv.css   12.92 kB │ gzip:  3.12 kB
+dist/assets/index-Cq0miZ40.js   301.25 kB │ gzip: 91.12 kB
+✓ built in 906ms
+Build Completed in /vercel/output [3s]
+Deploying outputs...
+[2K[1A[2K[G▲ Production  https://webapp-1z10gh7aa-feruz-s-projects.vercel.app
+Completing…
+▲ Aliased     https://webapp-kohl-kappa.vercel.app
+{
+  "status": "ok",
+  "deployment": {
+    "id": "dpl_BAZac18Q1s1pNv1X3mHpR9ryqauN",
+    "url": "https://webapp-1z10gh7aa-feruz-s-projects.vercel.app",
+    "inspectorUrl": "https://vercel.com/feruz-s-projects/webapp/BAZac18Q1s1pNv1X3mHpR9ryqauN",
+    "readyState": "READY",
+    "target": "production",
+    "deploymentApiUrl": "https://api.vercel.com/v13/deployments/dpl_BAZac18Q1s1pNv1X3mHpR9ryqauN"
+  },
+  "message": "Deployment webapp-1z10gh7aa-feruz-s-projects.vercel.app ready.",
+  "next": [
+    {
+      "command": "vercel inspect webapp-1z10gh7aa-feruz-s-projects.vercel.app",
+      "when": "Inspect deployment"
+    },
+    {
+      "command": "vercel deploy --prod",
+      "when": "Promote to production"
+    }
+  ]
+}

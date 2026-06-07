@@ -137,7 +137,7 @@ const AdminPanelPage = ({ storeId }) => {
 
   const openAdd = () => {
     setEditingId(null);
-    setNewProduct({ nameUz: '', nameRu: '', price: '', discountToggle: false, discountPrice: '', category: '', unit: 'dona', image: '', stockQty: '', is_bestseller: false, variantsStr: '' });
+    setNewProduct({ nameUz: '', nameRu: '', price: '', discountToggle: false, discountPrice: '', category: '', unit: 'dona', image: '', stockQty: '', is_bestseller: false, variantsStr: '', flashSaleHours: '', flashSalePrice: '' });
     setShowAdd(true);
   };
 
@@ -165,13 +165,21 @@ const AdminPanelPage = ({ storeId }) => {
         vStr = p.variants.map(v => `${v.name}:${v.price}`).join(', ');
     }
 
+    let flashHours = '';
+    if (p.flash_sale_end) {
+        const diffMs = new Date(p.flash_sale_end) - new Date();
+        if (diffMs > 0) flashHours = Math.round(diffMs / (1000 * 60 * 60));
+    }
+
     setEditingId(p.id);
     setNewProduct({
         nameUz: nUz, nameRu: nRu, price: p.price,
-        discountToggle: false, discountPrice: '', // For now, not parsing discount from price string, just keeping basic
+        discountToggle: false, discountPrice: '',
         category: cleanCat, unit: unitStr, stockQty: qtyStr, image: p.image_url || '',
         is_bestseller: !!p.is_bestseller,
-        variantsStr: vStr
+        variantsStr: vStr,
+        flashSaleHours: flashHours,
+        flashSalePrice: p.flash_sale_price || ''
     });
     setShowAdd(true);
   };
@@ -199,8 +207,21 @@ const AdminPanelPage = ({ storeId }) => {
             }).filter(Boolean);
         } catch(e) {}
     }
+    
+    let flashSaleEnd = null;
+    let flashSalePrice = null;
+    if (newProduct.flashSaleHours && newProduct.flashSalePrice) {
+        const d = new Date();
+        d.setHours(d.getHours() + parseFloat(newProduct.flashSaleHours));
+        flashSaleEnd = d.toISOString();
+        flashSalePrice = parseFloat(newProduct.flashSalePrice);
+    }
 
-    const payload = { name: nameData, price: priceData, category: catData, image_url: newProduct.image, is_bestseller: !!newProduct.is_bestseller, variants: variantsData };
+    const payload = { 
+        name: nameData, price: priceData, category: catData, 
+        image_url: newProduct.image, is_bestseller: !!newProduct.is_bestseller, 
+        variants: variantsData, flash_sale_end: flashSaleEnd, flash_sale_price: flashSalePrice 
+    };
     if (storeId) payload.store_id = storeId;
     
     try {
@@ -411,6 +432,20 @@ const AdminPanelPage = ({ storeId }) => {
                   <input className="input-field" type="text" inputMode="numeric" placeholder="20000" value={newProduct.discountPrice} onChange={e => setNewProduct({...newProduct, discountPrice: e.target.value})} style={{borderColor: '#fca5a5'}} />
                 </>
             )}
+
+            <div style={{background: 'rgba(239, 68, 68, 0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: 12}}>
+                <div style={{fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#ef4444'}}>⏱ Taymerli Aksiya (Flash Sale)</div>
+                <div style={{display: 'flex', gap: 8}}>
+                    <div style={{flex: 1}}>
+                        <div style={{fontSize: 12, marginBottom: 4, color: '#334155'}}>Necha soat qoldi?</div>
+                        <input className="input-field" type="number" placeholder="M: 24" value={newProduct.flashSaleHours} onChange={e => setNewProduct({...newProduct, flashSaleHours: e.target.value})} style={{marginBottom: 0}} />
+                    </div>
+                    <div style={{flex: 1}}>
+                        <div style={{fontSize: 12, marginBottom: 4, color: '#334155'}}>Aksiya narxi (so'm)</div>
+                        <input className="input-field" type="number" placeholder="M: 15000" value={newProduct.flashSalePrice} onChange={e => setNewProduct({...newProduct, flashSalePrice: e.target.value})} style={{marginBottom: 0}} />
+                    </div>
+                </div>
+            </div>
 
             <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12}}>
                 <span style={{fontWeight: 600, color: '#334155'}}>Bestseller (Tavsiya etamiz) ⭐️</span>

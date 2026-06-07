@@ -1,0 +1,42 @@
+Retrieving project…
+Deploying feruz-s-projects/webapp
+Uploading [--------------------] (0.0B/35.4KB)
+Uploading [========------------] (15.3KB/35.4KB)
+Uploading [==================--] (33.4KB/35.4KB)
+Uploading [====================] (35.4KB/35.4KB)
+  Inspect     https://vercel.com/feruz-s-projects/webapp/8to7AfofvFMTuZgMmu3Vg3yXsUa3
+▲ Production  https://webapp-325b5bbt1-feruz-s-projects.vercel.app
+Building…
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Downloading 46 deployment files...
+Restored build cache from previous deployment (4NVsXSMedk7gDfskQYFTrS2FNbko)
+Running "vercel build"
+Vercel CLI 54.9.0
+[2K[1A[2K[G▲ Production  https://webapp-325b5bbt1-feruz-s-projects.vercel.app
+Completing…
+▲ Aliased     https://webapp-kohl-kappa.vercel.app
+{
+  "status": "ok",
+  "deployment": {
+    "id": "dpl_8to7AfofvFMTuZgMmu3Vg3yXsUa3",
+    "url": "https://webapp-325b5bbt1-feruz-s-projects.vercel.app",
+    "inspectorUrl": "https://vercel.com/feruz-s-projects/webapp/8to7AfofvFMTuZgMmu3Vg3yXsUa3",
+    "readyState": "READY",
+    "target": "production",
+    "deploymentApiUrl": "https://api.vercel.com/v13/deployments/dpl_8to7AfofvFMTuZgMmu3Vg3yXsUa3"
+  },
+  "message": "Deployment webapp-325b5bbt1-feruz-s-projects.vercel.app ready.",
+  "next": [
+    {
+      "command": "vercel inspect webapp-325b5bbt1-feruz-s-projects.vercel.app",
+      "when": "Inspect deployment"
+    },
+    {
+      "command": "vercel deploy --prod",
+      "when": "Promote to production"
+    }
+  ]
+}

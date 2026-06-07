@@ -1,0 +1,13 @@
+WARNING! The following flags are deprecated: --github
+Read more in our changelog (https://vercel.com/changelog/new-vercel-cli-login-flow).
+> 
+  Visit https://vercel.com/oauth/device?user_code=CWZV-DXBS
+
+Waiting for authentication...
+[2K[1A[2K[G
+  Congratulations! You are now signed in.
+
+  To deploy something, run `vercel`.
+
+  💡 To deploy every commit automatically,
+  connect a Git Repository (vercel.link/git (https://vercel.link/git)).

@@ -100,11 +100,24 @@ const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
     if (stockStr === '0') isOut = true;
   }
 
+  let isFlash = false;
+  let flashPrice = 0;
+  let flashHours = 0;
+  if (p.flash_sale_end && p.flash_sale_price) {
+      const diffMs = new Date(p.flash_sale_end) - new Date();
+      if (diffMs > 0) {
+          isFlash = true;
+          flashPrice = p.flash_sale_price;
+          flashHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      }
+  }
+
   return (
     <div className="p-card" onClick={() => !isOut && onImageClick(p)} style={{opacity: isOut ? 0.6 : 1, position: 'relative'}}>
       <div className="p-img-wrap">
         <img src={p.image_url || `https://picsum.photos/seed/${p.name}/300`} alt={p.name} className="p-img" />
         {isOut && <div style={{position: 'absolute', top: 8, left: 8, background: 'rgba(239,68,68,0.9)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6}}>QOLMAGAN</div>}
+        {isFlash && !isOut && <div style={{position: 'absolute', top: 8, left: 8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, boxShadow: '0 2px 4px rgba(239,68,68,0.3)'}}>⏱ {flashHours} soat</div>}
         <button className={`p-fav ${isFav ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleFav(p.id); }}>
           <Heart size={16} fill={isFav ? "currentColor" : "none"} />
         </button>
@@ -115,7 +128,16 @@ const ProductCard = ({ p, favs, toggleFav, onImageClick }) => {
           <span>{catName || 'sht'}</span>
           {stockStr && !isOut && <span style={{color:'#059669'}}>Zaxira: {stockStr}</span>}
         </div>
-        <div className="p-price">{p.price} so'm</div>
+        <div className="p-price">
+           {isFlash ? (
+              <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                <span style={{color: '#ef4444'}}>{flashPrice.toLocaleString()}</span>
+                <span style={{textDecoration: 'line-through', fontSize: 11, color: '#94a3b8'}}>{parseInt(p.price) || ''}</span>
+              </div>
+           ) : (
+              p.price
+           )}
+        </div>
       </div>
     </div>
   );
@@ -139,12 +161,27 @@ const ProductModal = ({ product, allProducts, onSelectProduct, onClose, cart, se
   }
   const maxQty = stockStr ? parseInt(stockStr, 10) : Infinity;
 
-  const variants = product.variants || [];
-  const hasVariants = variants.length > 0;
+  const hasVariants = product.variants && Array.isArray(product.variants) && product.variants.length > 0;
+  const variants = hasVariants ? product.variants : [];
   const currentVariant = hasVariants ? variants[variantIdx] : null;
-  const currentPrice = hasVariants ? currentVariant.price : parseInt(product.price?.toString().replace(/\D/g, '') || 0);
-  const cartKey = hasVariants ? `${product.id}_${variantIdx}` : product.id;
+
+  let basePrice = currentVariant ? currentVariant.price : parseInt(product.price) || 0;
   
+  let isFlash = false;
+  let flashPrice = 0;
+  let flashHours = 0;
+  if (product.flash_sale_end && product.flash_sale_price) {
+      const diffMs = new Date(product.flash_sale_end) - new Date();
+      if (diffMs > 0) {
+          isFlash = true;
+          flashPrice = product.flash_sale_price;
+          flashHours = Math.ceil(diffMs / (1000 * 60 * 60));
+          basePrice = flashPrice; // Override with flash price
+      }
+  }
+
+  const currentPrice = basePrice;
+  const cartKey = hasVariants ? `${product.id}_${variantIdx}` : product.id;
   const qty = cart[cartKey]?.quantity || 0;
 
   const handleAdd = () => {
@@ -179,7 +216,22 @@ const ProductModal = ({ product, allProducts, onSelectProduct, onClose, cart, se
       <div className="m-info">
         <h2 className="m-title">{product.name}</h2>
         <div className="m-stock">{stockStr ? `Mavjud: ${stockStr} ta` : 'Mavjud'}</div>
-        <div className="m-price">{(currentPrice || 0).toLocaleString()} so'm</div>
+        <div className="m-price">
+           {isFlash ? (
+               <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                 <span style={{color: '#ef4444', fontSize: 24, fontWeight: 800}}>{flashPrice.toLocaleString()} so'm</span>
+                 <span style={{textDecoration: 'line-through', fontSize: 14, color: '#94a3b8'}}>{parseInt(product.price).toLocaleString()} so'm</span>
+               </div>
+           ) : (
+               `${(currentPrice || 0).toLocaleString()} so'm`
+           )}
+        </div>
+        
+        {isFlash && (
+            <div style={{background: 'rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: 8, color: '#ef4444', fontWeight: 700, fontSize: 13, marginTop: 8, display: 'inline-block'}}>
+                ⏱ Aksiya tugashiga {flashHours} soat qoldi
+            </div>
+        )}
         
         {hasVariants && (
             <>
@@ -886,6 +938,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('lang', lang);
   }, [lang]);
+
+  // Sync cart to backend for Abandoned Cart recovery
+  useEffect(() => {
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (storeId && tgUser?.id) {
+        fetch('https://webapp-kohl-kappa.vercel.app/api/save-cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ store_id: storeId, user_id: tgUser.id, cart })
+        }).catch(e => console.error("Error saving cart", e));
+    }
+  }, [cart, storeId]);
 
   const t = (key, l) => tDict[l || lang]?.[key] || key;
 
